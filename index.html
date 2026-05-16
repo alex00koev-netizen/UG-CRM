@@ -295,12 +295,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div class="input-grid">
       <div class="input-group">
         <label>Общий счётчик</label>
-        <input inputmode="numeric" type="number" id="general-counter" step="1" min="0" placeholder="22000" oninput="checkCounterDiff()">
+        <input inputmode="numeric" type="number" id="general-counter" step="1" min="0" placeholder="25000" oninput="checkCounterDiff()">
         <div class="unit">порции</div>
       </div>
       <div class="input-group">
         <label>Промежуточный счётчик</label>
-        <input inputmode="numeric" type="number" id="engineer-counter" step="1" min="0" placeholder="46000" oninput="checkCounterDiff()">
+        <input inputmode="numeric" type="number" id="engineer-counter" step="1" min="0" placeholder="100" oninput="checkCounterDiff()">
         <div class="unit">порции</div>
       </div>
     </div>
@@ -1044,8 +1044,8 @@ function onMachineChange() {
         _dw.textContent='Последний ввод '+_l[2]+': Общий (D)='+_l[3]+', Промеж. (E)='+(_l[4]||'—');
       }
     } else {
-      _gi.placeholder='Общий счётчик';
-      _ei.placeholder='Промежуточный счётчик';
+      _gi.placeholder='25000';
+      _ei.placeholder='100';
     }
   }
 
@@ -1219,25 +1219,22 @@ function onDashClientChange() {
 }
 
 function buildHistoryTable(visits) {
-  // Визиты: 0=НазвТТ,1=Дата,2=ТП,3=ОстКоф,4=ОстМол,5=ОстВис,
-  //         8=ЗаяКоф,9=ЗаяМол,10=ЗаяВис,...,23=Примечание
+  // Визиты: J(9)=ЗаяКоф K(10)=ЗаяМол L(11)=ЗаяВис M(12)=ЗаяШок N(13)=ЗаяМор
   var rows = '';
   visits.forEach(function(r) {
     rows += '<tr>' +
       '<td>' + (fmtDate(r[1])||'') + '</td>' +
-      '<td style="text-align:center;color:var(--accent)">' + (r[4]||'—') + '</td>' +
-      '<td style="text-align:center;color:var(--green)">'  + (r[9]||'—') + '</td>' +
-      '<td style="text-align:center">'                     + (r[5]||'—') + '</td>' +
-      '<td style="text-align:center">'                     + (r[10]||'—') + '</td>' +
-      '<td style="text-align:center;color:var(--purple)">' + (r[6]||'—') + '</td>' +
-      '<td style="font-size:11px;color:var(--muted)">'     + (r[3]||'') + '</td>' +
+      '<td style="text-align:center;color:var(--accent)">'  + (r[9] ||'—') + '</td>' +
+      '<td style="text-align:center;color:var(--green)">'   + (r[10]||'—') + '</td>' +
+      '<td style="text-align:center;color:var(--purple)">'  + (r[11]||'—') + '</td>' +
+      '<td style="text-align:center">'                      + (r[12]||'—') + '</td>' +
+      '<td style="text-align:center">'                      + (r[13]||'—') + '</td>' +
       '</tr>';
   });
-  return '<div style="font-family:var(--font-head);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px">Последние ' + visits.length + ' визита</div>' +
+  return '<div style="font-family:var(--font-head);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px">Последние ' + visits.length + ' визитов</div>' +
     '<div class="info-card" style="overflow-x:auto;padding:0">' +
-    '<table class="visits-table" style="min-width:420px">' +
-    '<tr><th>Дата</th><th>Ост.кофе</th><th>Завоз кофе</th>' +
-    '<th>Ост.мол</th><th>Завоз мол.</th><th>Ост.виски</th><th style="text-align:left">Прим.</th></tr>' +
+    '<table class="visits-table" style="min-width:360px">' +
+    '<tr><th>Дата</th><th>Кофе</th><th>Молоко</th><th>Виски</th><th>Шоколад</th><th>Мороженое</th></tr>' +
     rows + '</table></div>';
 }
 
@@ -1519,7 +1516,6 @@ async function loadDash() {
           <div>
             <span style="color:var(--muted);font-size:12px">Разница: </span>
             <b style="color:var(--accent);font-size:18px">${genSold!==null?genSold:'—'}</b>
-            ${genDiff!==null?`<span style="margin-left:10px;font-size:12px;color:${Math.abs(genDiff)>5?'var(--danger)':'var(--green)'}">Δ по счётчикам: ${genDiff>0?'+':''}${genDiff}</span>`:''}
           </div>
         </div>
       </div>
@@ -1535,6 +1531,7 @@ async function loadDash() {
           <div>
             <span style="color:var(--muted);font-size:12px">Разница: </span>
             <b style="color:var(--purple);font-size:18px">${engSold!==null?engSold:'—'}</b>
+            ${genDiff!==null?`<span style="margin-left:10px;font-size:12px;color:${Math.abs(genDiff)>5?'var(--danger)':'var(--green)'}">Δ по счётчикам: ${genDiff>0?'+':''}${genDiff}</span>`:''}
           </div>
         </div>
       </div>
