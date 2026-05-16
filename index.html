@@ -883,7 +883,7 @@ async function fetchAllData() {
     // 0=НазвТТ, 1=Серийный№, 2=Дата, 3=Напиток, 4=Счётчик, 5=Продано
     setStatus('Загружаем счётчики...'); const scRaw = await scriptGet('Счетчики расхода');
     // Счётчики расхода: row1=заголовок, data с row2
-    // 0=НазвТТ, 1=Серийный№, 2=Дата, 3=Напиток, 4=Счётчик, 5=Продано
+    // 0=НазвТТ, 1=Серийный№, 2=Дата, 3=Напиток, 4=Стакан(мл), 5=Счётчик, 6=Продано
     window._allCounters = scRaw.slice(1).filter(r => r[0] && r[3]).map(r => {
       const rr = [...r];
       rr[2] = fmtDate(rr[2]);
@@ -1075,11 +1075,11 @@ function onMachineChange() {
       <div style="flex:1">
         <div class="drink-name">${d.name}</div>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
-          ${d.kofe  ? `<span class="badge" style="font-size:10px;color:var(--accent)">☕ ${d.kofe}г</span>` : ''}
-          ${d.mol   ? `<span class="badge" style="font-size:10px">мол ${d.mol}кг</span>`   : ''}
-          ${d.vis   ? `<span class="badge" style="font-size:10px">виски ${d.vis}кг</span>` : ''}
-          ${d.shok  ? `<span class="badge" style="font-size:10px">шок ${d.shok}кг</span>`  : ''}
-          ${d.moroz ? `<span class="badge" style="font-size:10px">мор ${d.moroz}кг</span>` : ''}
+          ${d.kofe  ? `<span class="badge" style="font-size:10px;color:var(--accent)">☕ ${d.kofe}</span>` : ''}
+          ${d.mol   ? `<span class="badge" style="font-size:10px">мол ${d.mol}</span>`   : ''}
+          ${d.vis   ? `<span class="badge" style="font-size:10px">виски ${d.vis}</span>` : ''}
+          ${d.shok  ? `<span class="badge" style="font-size:10px">шок ${d.shok}</span>`  : ''}
+          ${d.moroz ? `<span class="badge" style="font-size:10px">мор ${d.moroz}</span>` : ''}
         </div>
       </div>
       <div class="drink-size">${d.size} мл</div>
@@ -1143,7 +1143,7 @@ async function submitVisit() {
     drinks.forEach((d,i) => {
       const val = parseInt(document.getElementById('drink-'+i)?.value||0);
       // Счётчики: A=НазвТТ, B=Серийный, C=Дата, D=Напиток, E=Тип(формула), F=Счётчик
-      if (val > 0) cRows.push([client, serial, ds, d.name.trim(), val]);
+      if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
     if (cRows.length) await scriptPost({ action:'addCounters', rows:cRows });
 
@@ -1275,7 +1275,7 @@ async function loadDash() {
       prevVisit   = myVisits[1]||null;
     }
 
-    // Счётчики: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Счётчик
+    // Счётчики: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Стакан,5=Счётчик
     const myCounters = (window._allCounters||[]).filter(r =>
       String(r[0]||'').trim() === client &&
       (!selMach || !r[1] || String(r[1]).trim() === selMach)
@@ -1284,18 +1284,19 @@ async function loadDash() {
     const curDate  = targetVisit ? fmtDate(targetVisit[1]) : null;
     const prevDate = prevVisit   ? fmtDate(prevVisit[1])   : null;
 
-    function getCounter(drink, date) {
+    function getCounter(drink, date, size) {
       if (!date) return null;
       const d = fmtDate(date);
       const dk = String(drink||'').trim().toLowerCase();
-      // Счётчики расхода: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Счётчик
+      // Счётчики расхода: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Стакан,5=Счётчик
       const row = myCounters.find(r =>
         String(r[3]||'').trim().toLowerCase() === dk &&
         fmtDate(r[2]) === d &&
-        (!selMach || !r[1] || String(r[1]).trim() === selMach)
+        (!selMach || !r[1] || String(r[1]).trim() === selMach) &&
+        (!size || !r[4] || String(r[4]).trim() === String(size).trim())
       );
-      // col E (index 4) = Счётчик
-      return row != null ? (parseFloat(row[4])||0) : null;
+      // col F (index 5) = Счётчик (col E=Стакан)
+      return row != null ? (parseFloat(row[5])||0) : null;
     }
 
     function getGenCounter(type, date) {
@@ -1317,8 +1318,8 @@ async function loadDash() {
 
     // Строки таблицы "Продано за период"
     const soldRows = allDrinks.sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(d => {
-      const cur  = getCounter(d.name, curDate);
-      const prev = getCounter(d.name, prevDate);
+      const cur  = getCounter(d.name, curDate, d.size);
+      const prev = getCounter(d.name, prevDate, d.size);
       const sold = (cur!==null && prev!==null) ? Math.max(0, cur-prev) : null;
       return {
         name: d.name, size: d.size,
@@ -1402,22 +1403,13 @@ async function loadDash() {
       ${priceItems.map(p=>ir(p[0], p[1]+' грн/'+p[2])).join('')}
     </div>` : ''}
 
-    <!-- ПОСЛЕДНИЙ / ВЫБРАННЫЙ ВИЗИТ -->
+    <!-- ПОСЛЕДНИЙ / ВЫБРАННЫЙ ВИЗИТ — компактная шапка -->
     ${targetVisit ? `
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px">
-      <div style="background:var(--bg3);padding:12px 16px;font-family:var(--font-head);font-size:12px;color:var(--accent);letter-spacing:.05em">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <div style="font-family:var(--font-head);font-size:12px;color:var(--accent);letter-spacing:.05em">
         ${dateInput?'ВИЗИТ':'ПОСЛЕДНИЙ ВИЗИТ'} — ${fmtDate(targetVisit[1])} · ${visitMachObj?visitMachObj.id+' '+visitMachObj.model:visitMachId}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-        ${[['КОФЕ',4,9,'accent-orange'],['МОЛОКО',5,10,'accent-green'],['ВИСКИ',6,11,'accent-purple'],['ШОКОЛАД',7,12,''],['МОРОЖЕНОЕ',8,13,'']].filter(([,oi,zi])=>targetVisit[oi]||targetVisit[zi]).map(([lbl,oi,zi,cls])=>`
-        <div style="padding:14px 16px;border-bottom:.5px solid var(--border)">
-          <div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.08em;margin-bottom:4px">${lbl}</div>
-          <div style="font-size:11px;color:var(--muted)">Завоз</div>
-          <div class="${cls}" style="font-family:var(--font-head);font-size:20px;font-weight:700">${targetVisit[zi]||0} <small style="font-size:12px">кг</small></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">остаток ${targetVisit[oi]||0} кг</div>
-        </div>`).join('')}
-        ${targetVisit[3] ? `<div style="padding:14px 16px;grid-column:1/-1;border-top:.5px solid var(--border);font-size:13px;color:var(--muted)">💬 ${targetVisit[3]}</div>` : ''}
-      </div>
+      ${targetVisit[3] ? `<div style="font-size:12px;color:var(--muted)">💬 ${targetVisit[3]}</div>` : ''}
     </div>` : '<div class="empty-state">Визитов пока нет</div>'}
 
     <!-- ТАБЛИЦА: ПРОДАНО ЗА ПЕРИОД -->
