@@ -306,8 +306,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
     <div id="counter-diff-warn" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(255,107,107,.15);border:1px solid var(--danger);border-radius:10px;font-size:13px;color:var(--danger);font-weight:600"></div>
 
-    <div class="section-title">Бонус/прочее (примечание)</div>
-    <textarea class="input-textarea" id="visit-note" placeholder="Замечания, пожелания клиента..."></textarea>
+    <div class="section-title">Пожелание</div>
+    <textarea class="input-textarea" id="visit-note" placeholder="Замечания по информации, важные примечания к визиту"></textarea>
 
     <button class="btn-submit" id="btn-submit" onclick="submitVisit()">
       <div class="spinner" id="submit-spinner"></div>
@@ -957,7 +957,7 @@ function onClientChange() {
   document.getElementById('cc-bonus').textContent   = cl.bonus   || '—';
   const noteEl = document.getElementById('cc-note');
   if (noteEl) noteEl.textContent = cl.note || '—';
-  document.getElementById('cc-koef').textContent    = cl.koef    || '—';
+  document.getElementById('cc-koef').textContent    = cl.koef    || '—';  // обновляется при смене аппарата
   document.getElementById('cc-extra').textContent   = cl.extra   || '—';
   document.getElementById('cc-service').textContent = cl.service || '—';
 
@@ -1003,6 +1003,14 @@ function onMachineChange() {
 
   // Placeholder счётчиков = последние значения по аппарату
   // Последний визит по выбранному аппарату
+  // Коэф. кофе — из выбранного аппарата
+  const _koefEl = document.getElementById('cc-koef');
+  if (_koefEl && machId) {
+    const _eqList = (equipmentData[name] || []);
+    const _selEq = _eqList.find(e => String(e.id||'').trim() === machId);
+    _koefEl.textContent = _selEq ? (_selEq.koef || '—') : (cl?.koef || '—');
+  }
+
   const _lvRow = document.getElementById('cc-last-visit-row');
   const _lvVal = document.getElementById('cc-last-visit');
   if (_lvRow && _lvVal && machId) {
@@ -1376,14 +1384,14 @@ async function loadDash() {
       ${cl?.extra  ? ir('Доп.инвентарь',  cl.extra) : ''}
       ${cl?.service? ir('Сервис',         cl.service) : ''}
       ${cl?.bonus  ? ir('Бонус/прочее',   cl.bonus) : ''}
-      ${cl?.koef   ? ir('Коеф. кофе',     cl.koef)  : ''}
+      ${(()=>{
+        const _dEq = (equipmentData[client]||[]).find(e=>!selMach||String(e.id||'').trim()===selMach);
+        const _dKoef = _dEq ? _dEq.koef : cl?.koef;
+        return _dKoef ? ir('Коеф. кофе', _dKoef) : '';
+      })()}
       ${activeMachines.length ? `<div class="cc-row">
         <div class="cc-label">Аппараты</div>
-        <div class="cc-val">${activeMachines.map(m => {
-          const lastV = myVisits.find(v => !selMach || String(v[1]||'').trim()===m.id);
-          const lastDate = lastV ? fmtDate(lastV[1]) : '—';
-          return m.id + ' — ' + m.model + '<br><span style="font-size:10px;color:var(--muted)">последний визит: ' + lastDate + '</span>';
-        }).join('<br><br>')}</div>
+        <div class="cc-val">${activeMachines.map(m => m.id + ' — ' + m.model).join('<br>')}</div>
       </div>` : ''}
       ${visitMachObj?.service ? ir('Сервис аппарата', visitMachObj.service) : ''}
     </div>
@@ -1421,7 +1429,7 @@ async function loadDash() {
       <table class="visits-table" style="min-width:580px">
         <tr style="font-size:10px">
           <th style="text-align:left;min-width:100px;padding:6px 8px">Напиток</th>
-          <th style="padding:6px 4px">Кофе<br>г</th>
+          <th style="padding:6px 4px">Кофе<br>кг</th>
           <th style="padding:6px 4px">Мол.<br>кг</th>
           <th style="padding:6px 4px">Вис.<br>кг</th>
           <th style="padding:6px 4px">Шок.<br>кг</th>
@@ -1432,7 +1440,7 @@ async function loadDash() {
         </tr>
         ${soldRows.map(r=>`<tr style="font-size:11px">
           <td style="padding:5px 8px">${r.name}<br><span style="font-size:9px;color:var(--muted)">${r.size} мл</span></td>
-          <td style="text-align:center;padding:5px 4px;color:var(--accent)">${r.kofe!=null?r.kofe+'г':'—'}</td>
+          <td style="text-align:center;padding:5px 4px;color:var(--accent)">${r.kofe!=null?r.kofe:'—'}</td>
           <td style="text-align:center;padding:5px 4px">${r.mol||'—'}</td>
           <td style="text-align:center;padding:5px 4px">${r.vis||'—'}</td>
           <td style="text-align:center;padding:5px 4px">${r.shok||'—'}</td>
@@ -1444,12 +1452,7 @@ async function loadDash() {
         <!-- ИТОГО -->
         <tr style="border-top:2px solid var(--border);background:var(--bg3)">
           <td style="font-weight:700;font-family:var(--font-head);font-size:10px">ИТОГО</td>
-          <td></td>
-          <td style="text-align:center;color:var(--green);font-weight:700">${totalMol.toFixed(3)}</td>
-          <td style="text-align:center;color:var(--purple);font-weight:700">${totalVis.toFixed(3)}</td>
-          <td style="text-align:center;color:var(--accent);font-weight:700">${totalShok.toFixed(3)}</td>
-          <td style="text-align:center;color:var(--orange,#f5a623);font-weight:700">${totalMoroz.toFixed(3)}</td>
-          <td></td><td></td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
           <td style="text-align:center;font-weight:700;font-size:16px;color:var(--accent)">${totalSold}</td>
         </tr>
         <!-- С НИХ + ВСЕГО -->
@@ -1500,6 +1503,51 @@ async function loadDash() {
         </div>
       </div>
     </div>
+
+    <!-- ТАБЛИЦА ОСТАТКОВ / РАСЧЁТОВ / ПОГРЕШНОСТИ / ЗАЯВКИ -->
+    ${targetVisit ? (() => {
+      const tv = targetVisit;
+      // Данные из визита по индексам
+      const rows = [
+        { label: 'Кофе, кг',      fact: tv[4],  calc: tv[19], pogr: tv[24], zay: tv[9]  },
+        { label: 'Молоко, кг',    fact: tv[5],  calc: tv[20], pogr: tv[25], zay: tv[10] },
+        { label: 'Виски, кг',     fact: tv[6],  calc: tv[21], pogr: tv[26], zay: tv[11] },
+        { label: 'Шоколад, кг',   fact: tv[7],  calc: tv[22], pogr: tv[27], zay: tv[12] },
+        { label: 'Мороженое, кг', fact: tv[8],  calc: tv[23], pogr: tv[28], zay: tv[13] },
+      ];
+      const fmtV = v => (v !== null && v !== undefined && v !== '') ? parseFloat(v).toFixed(3) : '—';
+      const pogrStyle = v => {
+        if (v === null || v === undefined || v === '') return '';
+        const n = parseFloat(v);
+        return (!isNaN(n) && (n < -0.5 || n > 0.5))
+          ? 'background:rgba(255,107,107,.2);color:var(--danger);font-weight:700'
+          : '';
+      };
+      return `
+      <div style="margin-top:16px">
+        <div style="font-family:var(--font-head);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">
+          Остатки и заявка на дату визита
+        </div>
+        <div class="info-card" style="overflow-x:auto;padding:0">
+          <table class="visits-table" style="min-width:480px">
+            <tr style="font-size:10px">
+              <th style="text-align:left;min-width:100px;padding:6px 8px"></th>
+              <th style="padding:6px 6px">Факт.<br>остатки</th>
+              <th style="padding:6px 6px">Расч.<br>остатки</th>
+              <th style="padding:6px 6px">Погреш-<br>ность</th>
+              <th style="padding:6px 6px;color:var(--accent)">Заявка</th>
+            </tr>
+            ${rows.map(r => `<tr style="font-size:12px">
+              <td style="padding:5px 8px;font-weight:600">${r.label}</td>
+              <td style="text-align:center;padding:5px 6px">${fmtV(r.fact)}</td>
+              <td style="text-align:center;padding:5px 6px">${fmtV(r.calc)}</td>
+              <td style="text-align:center;padding:5px 6px;${pogrStyle(r.pogr)}">${fmtV(r.pogr)}</td>
+              <td style="text-align:center;padding:5px 6px;color:var(--accent);font-weight:700">${fmtV(r.zay)}</td>
+            </tr>`).join('')}
+          </table>
+        </div>
+      </div>`;
+    })() : ''}
 
     <!-- ПОСЛЕДНИЕ 5 ВИЗИТОВ -->
     ${myVisits.length ? buildHistoryTable(myVisits.slice(0,5)) : ''}
