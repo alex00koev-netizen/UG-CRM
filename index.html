@@ -173,8 +173,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
     <div class="config-field" id="cfg-url-field">
       <label>URL Apps Script</label>
-      <input id="cfg-script-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-      <div class="config-hint">Вводится один раз — сохраняется автоматически. После первого входа поле исчезнет.</div>
+      <input id="cfg-script-url" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="config-hint">Вводится один раз — сохраняется автоматически</div>
     </div>
     <button class="btn-primary" onclick="saveConfig()">Войти</button>
     <div id="cfg-error" style="display:none;margin-top:8px;padding:10px 14px;background:#ff6b6b22;border:1px solid #ff6b6b55;border-radius:8px;font-size:13px;color:#ff6b6b;text-align:center"></div>
@@ -534,7 +534,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.1';
 
 // ══ ПОЛЬЗОВАТЕЛИ И ПРАВА ══════════════════════════════════════════════════
 // Роли: 'admin' = полный доступ | 'agent' = только свои клиенты | 'tech' = без цен и завоза
@@ -567,14 +567,12 @@ function loadConfig() {
   const s = localStorage.getItem('crm_cfg');
   if (s) {
     CFG = JSON.parse(s);
-    // Восстанавливаем CURRENT_USER из сохранённых данных
     if (CFG.userKey && USERS[CFG.userKey]) {
       CURRENT_USER = { key: CFG.userKey, ...USERS[CFG.userKey] };
     }
     const urlInp = document.getElementById('cfg-script-url');
-    if (CFG.scriptUrl && urlInp) {
+    if (urlInp && CFG.scriptUrl) {
       urlInp.value = CFG.scriptUrl;
-      // URL уже сохранён — скрываем поле
       const urlField = document.getElementById('cfg-url-field');
       if (urlField) urlField.style.display = 'none';
     }
@@ -604,7 +602,7 @@ function saveConfig() {
     return;
   }
 
-  // Пароль верный — берём URL (из поля или из localStorage)
+  // Пароль верный — берём URL из поля или localStorage
   let url = document.getElementById('cfg-script-url').value.trim();
   if (!url) {
     const saved_cfg = localStorage.getItem('crm_cfg');
@@ -630,14 +628,12 @@ function saveConfig() {
   setTimeout(startApp, 400);
 }
 function openConfig() {
-  // Подставляем текущий сохранённый URL чтобы его можно было увидеть и изменить
   const urlInp = document.getElementById('cfg-script-url');
   const urlField = document.getElementById('cfg-url-field');
   if (urlInp && CFG.scriptUrl) {
     urlInp.value = CFG.scriptUrl;
-    urlField.style.display = 'block'; // всегда показываем при открытии настроек
+    if (urlField) urlField.style.display = 'block';
   }
-  // Подставляем текущего пользователя
   const nameEl = document.getElementById('cfg-name');
   if (nameEl && CFG.userKey) nameEl.value = CFG.userKey;
   document.getElementById('cfg-password').value = '';
@@ -826,10 +822,12 @@ async function fetchAllData() {
       if (!drinksData[cl].find(d => d._key === key)) {
         drinksData[cl].push({
           _key: key, name, serial, size,
-          mol:   r[6] != null ? r[6] : null,
-          vis:   r[7] != null ? r[7] : null,
-          shok:  r[8] != null ? r[8] : null,
-          moroz: r[9] != null ? r[9] : null,
+          kofe:  r[6] != null && r[6] !== '' ? parseFloat(r[6]) : null,
+          mol:   r[7] != null && r[7] !== '' ? r[7] : null,
+          vis:   r[8] != null && r[8] !== '' ? r[8] : null,
+          shok:  r[9] != null && r[9] !== '' ? r[9] : null,
+          moroz: r[10] != null && r[10] !== '' ? r[10] : null,
+          type:  r[11] != null ? String(r[11]).trim() : '',
         });
       }
     });
@@ -914,77 +912,34 @@ async function fetchAllData() {
   }
 }
 
-
-// ── Поиск клиента ─────────────────────────────────────────────────────────
-function getClientVal(prefix) {
-  const el = document.getElementById(prefix + '-client');
-  return el ? el.value.trim() : '';
-}
-
-function _getSearchList(prefix) {
-  const day = prefix === 'visit'
-    ? ((document.getElementById('visit-day-filter')||{}).value || '')
-    : prefix === 'dash'
-      ? ((document.getElementById('dash-day-filter')||{}).value || '')
-      : '';
-  let list = clientsData.filter(c => !c.active || c.active === 'Да' || c.active === 'да');
-  if (isAgent()) list = list.filter(c => c.tp === CURRENT_USER.tp);
-  if (day) list = list.filter(c => String(c.day||'').toLowerCase() === day);
-  return list.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-}
-
-function openClientDropdown(prefix) {
-  const inp = document.getElementById(prefix + '-client');
-  const dd  = document.getElementById(prefix + '-client-dropdown');
-  if (!inp || !dd) return;
-  const q = inp.value.trim().toLowerCase();
-  const all = _getSearchList(prefix);
-  const filtered = q ? all.filter(c => c.name.toLowerCase().includes(q)) : all;
-  const _esc = s => s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  dd.innerHTML = filtered.slice(0, 80).map(c =>
-    '<div class="client-dropdown-item" onmousedown="selectClient(\'' + prefix + '\',\'' + _esc(c.name) + '\')">' +
-    c.name +
-    (c.day ? '<span class="client-day-hint">(' + c.day + ')</span>' : '') +
-    '</div>'
-  ).join('') || '<div class="client-dropdown-item" style="color:var(--muted);font-weight:400">Не найдено</div>';
-  dd.classList.add('open');
-}
-
-function closeClientDropdown(prefix, delay) {
-  setTimeout(() => {
-    const dd = document.getElementById(prefix + '-client-dropdown');
-    if (dd) dd.classList.remove('open');
-  }, delay || 0);
-}
-
-function selectClient(prefix, name) {
-  const inp = document.getElementById(prefix + '-client');
-  if (inp) inp.value = name;
-  closeClientDropdown(prefix, 0);
-  if (prefix === 'visit') onClientChange();
-  else if (prefix === 'dash') onDashClientChange();
-  else if (prefix === 'chg') onChangeClient();
-}
-
 function populateSelects() {
-  // Поля visit/dash/chg — поиск, список строится динамически
+  const names = clientsData.map(c => c.name);
+  ['visit-client','dash-client','chg-client'].forEach(id => {
+    const sel = document.getElementById(id); if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">— выберите клиента —</option>` + names.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');
+  });
 }
 
 // ══ ДЕНЬ НЕДЕЛИ — фильтр клиентов ══════════════════════════════════════════
 function filterClientsByDay() {
-  const inp = document.getElementById('visit-client');
-  if (inp) inp.value = '';
-  openClientDropdown('visit');
+  const day = document.getElementById('visit-day-filter').value;
+  const sel = document.getElementById('visit-client');
+  const cur = sel.value;
+  const list = day ? clientsData.filter(c => String(c.day||'').toLowerCase() === day) : clientsData;
+  sel.innerHTML = `<option value="">— выберите клиента —</option>` + list.map(c=>`<option${c.name===cur?' selected':''}>${c.name}</option>`).join('');
 }
 function filterDashClients() {
-  const inp = document.getElementById('dash-client');
-  if (inp) inp.value = '';
-  openClientDropdown('dash');
+  const day = document.getElementById('dash-day-filter').value;
+  const sel = document.getElementById('dash-client');
+  const cur = sel.value;
+  const list = day ? clientsData.filter(c => String(c.day||'').toLowerCase() === day) : clientsData;
+  sel.innerHTML = `<option value="">— клиент —</option>` + list.map(c=>`<option${c.name===cur?' selected':''}>${c.name}</option>`).join('');
 }
 
 // ══ ВИЗИТ — логика ══════════════════════════════════════════════════════════
 function onClientChange() {
-  const name = getClientVal('visit');
+  const name = document.getElementById('visit-client').value;
   const card = document.getElementById('client-card');
   if (!name) { card.classList.remove('visible'); document.getElementById('drinks-list').innerHTML = '<div class="empty-state">Сначала выберите клиента</div>'; return; }
   const cl = clientsData.find(c => c.name === name);
@@ -1044,7 +999,7 @@ function onMachineChange() {
   if (svcEl) svcEl.textContent = svcText;
   if (svcRow) svcRow.style.display = 'flex';
 
-  // Placeholder счётчиков = последние значения
+  // Placeholder счётчиков = последние значения по аппарату
   const _gi = document.getElementById('general-counter');
   const _ei = document.getElementById('engineer-counter');
   if (_gi && machId) {
@@ -1118,7 +1073,7 @@ function adjDrink(i, d) {
 }
 
 async function submitVisit() {
-  const client = getClientVal('visit');
+  const client = document.getElementById('visit-client').value;
   if (!client) { showToast('Выберите клиента', true); return; }
   const machine = document.getElementById('visit-machine').value || '';
   const btn = document.getElementById('btn-submit');
@@ -1245,12 +1200,12 @@ function buildHistoryTable(visits) {
   visits.forEach(function(r) {
     rows += '<tr>' +
       '<td>' + (fmtDate(r[1])||'') + '</td>' +
-      '<td style="text-align:center;color:var(--accent)">' + (r[3]||'—') + '</td>' +
-      '<td style="text-align:center;color:var(--green)">'  + (r[13]||'—') + '</td>' +
-      '<td style="text-align:center">'                     + (r[4]||'—') + '</td>' +
-      '<td style="text-align:center">'                     + (r[14]||'—') + '</td>' +
-      '<td style="text-align:center;color:var(--purple)">' + (r[5]||'—') + '</td>' +
-      '<td style="font-size:11px;color:var(--muted)">'     + (r[18]||'') + '</td>' +
+      '<td style="text-align:center;color:var(--accent)">' + (r[4]||'—') + '</td>' +
+      '<td style="text-align:center;color:var(--green)">'  + (r[9]||'—') + '</td>' +
+      '<td style="text-align:center">'                     + (r[5]||'—') + '</td>' +
+      '<td style="text-align:center">'                     + (r[10]||'—') + '</td>' +
+      '<td style="text-align:center;color:var(--purple)">' + (r[6]||'—') + '</td>' +
+      '<td style="font-size:11px;color:var(--muted)">'     + (r[3]||'') + '</td>' +
       '</tr>';
   });
   return '<div style="font-family:var(--font-head);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px">Последние ' + visits.length + ' визита</div>' +
@@ -1282,14 +1237,14 @@ async function loadDash() {
 
     // Визиты — фильтр, исключаем доп.загрузка (col20)
     let myVisits = visitsData.filter(r =>
-      r[0]===client && (!selMach||r[1]===selMach) &&
-      String(r[20]||'').toLowerCase() !== 'доп.загрузка'
+      r[0]===client &&
+      String(r[3]||'').toLowerCase() !== 'доп.загрузка'
     );
 
     let targetVisit=null, prevVisit=null;
     if (dateInput) {
-      targetVisit = myVisits.find(r => fmtDate(r[2]) === dateInput) || null;
-      prevVisit   = myVisits.find(r => fmtDate(r[2]) < dateInput)   || null;
+      targetVisit = myVisits.find(r => fmtDate(r[1]) === dateInput) || null;
+      prevVisit   = myVisits.find(r => fmtDate(r[1]) < dateInput)   || null;
     } else {
       targetVisit = myVisits[0]||null;
       prevVisit   = myVisits[1]||null;
@@ -1314,8 +1269,8 @@ async function loadDash() {
         fmtDate(r[2]) === d &&
         (!selMach || !r[1] || String(r[1]).trim() === selMach)
       );
-      // col5 = Счётчик (после вставки Тип в col4)
-      return row != null ? (parseFloat(row[5])||0) : null;
+      // col E (index 4) = Счётчик
+      return row != null ? (parseFloat(row[4])||0) : null;
     }
 
     function getGenCounter(type, date) {
@@ -1419,17 +1374,17 @@ async function loadDash() {
     ${targetVisit ? `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px">
       <div style="background:var(--bg3);padding:12px 16px;font-family:var(--font-head);font-size:12px;color:var(--accent);letter-spacing:.05em">
-        ${dateInput?'ВИЗИТ':'ПОСЛЕДНИЙ ВИЗИТ'} — ${fmtDate(targetVisit[2])} · ${visitMachObj?visitMachObj.id+' '+visitMachObj.model:visitMachId}
+        ${dateInput?'ВИЗИТ':'ПОСЛЕДНИЙ ВИЗИТ'} — ${fmtDate(targetVisit[1])} · ${visitMachObj?visitMachObj.id+' '+visitMachObj.model:visitMachId}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-        ${[['КОФЕ',3,13,'accent-orange'],['МОЛОКО',4,14,'accent-green'],['ВИСКИ',5,15,'accent-purple'],['ШОКОЛАД',6,16,''],['МОРОЖЕНОЕ',7,17,'']].filter(([,oi,zi])=>targetVisit[oi]||targetVisit[zi]).map(([lbl,oi,zi,cls])=>`
+        ${[['КОФЕ',4,9,'accent-orange'],['МОЛОКО',5,10,'accent-green'],['ВИСКИ',6,11,'accent-purple'],['ШОКОЛАД',7,12,''],['МОРОЖЕНОЕ',8,13,'']].filter(([,oi,zi])=>targetVisit[oi]||targetVisit[zi]).map(([lbl,oi,zi,cls])=>`
         <div style="padding:14px 16px;border-bottom:.5px solid var(--border)">
           <div style="font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.08em;margin-bottom:4px">${lbl}</div>
           <div style="font-size:11px;color:var(--muted)">Завоз</div>
           <div class="${cls}" style="font-family:var(--font-head);font-size:20px;font-weight:700">${targetVisit[zi]||0} <small style="font-size:12px">кг</small></div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">остаток ${targetVisit[oi]||0} кг</div>
         </div>`).join('')}
-        ${targetVisit[20] ? `<div style="padding:14px 16px;grid-column:1/-1;border-top:.5px solid var(--border);font-size:13px;color:var(--muted)">💬 ${targetVisit[20]}</div>` : ''}
+        ${targetVisit[3] ? `<div style="padding:14px 16px;grid-column:1/-1;border-top:.5px solid var(--border);font-size:13px;color:var(--muted)">💬 ${targetVisit[3]}</div>` : ''}
       </div>
     </div>` : '<div class="empty-state">Визитов пока нет</div>'}
 
@@ -1537,21 +1492,21 @@ function renderHistory() {
   cont.innerHTML = visitsData.slice(0,20).map(r=>`
     <div class="history-item">
       <div class="history-header">
-        <div class="history-date">${r[2]||'—'}</div>
-        <div class="history-client">${r[0]||''} ${r[1]?'· '+r[1]:''}</div>
+        <div class="history-date">${r[1]||'—'}</div>
+        <div class="history-client">${r[0]||''} ${r[2]?'· '+r[2]:''}</div>
       </div>
       <div class="history-grid">
         <div class="history-cell"><div class="history-cell-label">Ост.кофе</div><div class="history-cell-val accent-orange">${r[5]||'—'}</div></div>
         <div class="history-cell"><div class="history-cell-label">Заявка кофе</div><div class="history-cell-val accent-green">${r[10]||'—'}</div></div>
         <div class="history-cell"><div class="history-cell-label">Ост.молоко</div><div class="history-cell-val">${r[6]||'—'}</div></div>
       </div>
-      ${r[20]?`<div style="margin-top:8px;font-size:12px;color:var(--muted)">💬 ${r[20]}</div>`:''}
+      ${r[3]?`<div style="margin-top:8px;font-size:12px;color:var(--muted)">💬 ${r[3]}</div>`:''}
     </div>`).join('');
 }
 
 // ══ ИЗМЕНЕНИЯ ══════════════════════════════════════════════════════════════
 function onChangeClient() {
-  const name = getClientVal('chg');
+  const name = document.getElementById('chg-client').value;
   const ms = document.getElementById('chg-machine');
   ms.innerHTML='<option value="">— аппарат —</option>';
   if (!name) return;
