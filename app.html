@@ -224,12 +224,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
 
     <!-- Клиент -->
-    <div class="sel-wrap">
-      <select id="visit-client" onchange="onClientChange()">
-        <option value="">— выберите клиента —</option>
-      </select>
-    </div>
-
+    <div class="client-search-wrap" id="visit-client-wrap">
+  <span class="client-search-icon">🔍</span>
+  <input type="text" id="visit-client" autocomplete="off" placeholder="Поиск клиента..."
+         oninput="openClientDropdown('visit')" onfocus="openClientDropdown('visit')"
+         onblur="closeClientDropdown('visit',250)">
+  <div class="client-dropdown" id="visit-client-dropdown"></div>
+</div>
+    
     <!-- Аппарат (инвентарный номер + модель) -->
     <div class="sel-wrap" id="visit-machine-wrap">
       <select id="visit-machine" onchange="onMachineChange()">
@@ -323,7 +325,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <option>четверг</option><option>пятница</option><option>суббота</option>
       </select>
       <!-- Клиент -->
-      <select id="dash-client" onchange="onDashClientChange()" style="flex:2;min-width:140px;font-weight:600">
+    <div class="client-search-wrap" id="dash-client-wrap" style="flex:2;min-width:140px;margin-bottom:0">
+  <span class="client-search-icon" style="font-size:12px">🔍</span>
+  <input type="text" id="dash-client" autocomplete="off" placeholder="Клиент..."
+         style="padding:10px 10px 10px 30px;font-size:13px"
+         oninput="openClientDropdown('dash')" onfocus="openClientDropdown('dash')"
+         onblur="closeClientDropdown('dash',250)">
+  <div class="client-dropdown" id="dash-client-dropdown"></div>
+</div>
         <option value="">— клиент —</option>
       </select>
       <!-- Аппарат -->
@@ -348,7 +357,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <!-- ══ ИЗМЕНЕНИЯ ══ -->
   <div id="page-changes" class="page">
     <div class="section-title" style="margin-top:0">Клиент и аппарат</div>
-    <div class="sel-wrap" style="margin-bottom:10px"><select id="chg-client" onchange="onChangeClient()"><option value="">— клиент —</option></select></div>
+<div class="client-search-wrap" id="chg-client-wrap" style="margin-bottom:10px">
+  <span class="client-search-icon">🔍</span>
+  <input type="text" id="chg-client" autocomplete="off" placeholder="Поиск клиента..."
+         oninput="openClientDropdown('chg')" onfocus="openClientDropdown('chg')"
+         onblur="closeClientDropdown('chg',250)">
+  <div class="client-dropdown" id="chg-client-dropdown"></div>
+</div>
     <div class="sel-wrap" style="margin-bottom:10px"><select id="chg-machine"><option value="">— аппарат —</option></select></div>
     <div class="input-group" style="margin-bottom:10px"><label>Дата изменения</label><input type="date" id="chg-date"></div>
     <div class="section-title">Тип изменения</div>
