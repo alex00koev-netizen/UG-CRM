@@ -251,6 +251,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="cc-row"><div class="cc-label">Адрес</div><div class="cc-val" id="cc-address">—</div></div>
       <div class="cc-row"><div class="cc-label">Контакт</div><div class="cc-val" id="cc-contact">—</div></div>
       <div class="cc-row"><div class="cc-label">Аппарат</div><div class="cc-val" id="cc-equip">—</div></div>
+      <div class="cc-row" id="cc-last-visit-row" style="display:none">
+        <div class="cc-label">Посл. визит</div>
+        <div class="cc-val" id="cc-last-visit">—</div>
+      </div>
       <div class="cc-row" id="cc-extra-row"><div class="cc-label">Доп.инвентарь</div><div class="cc-val" id="cc-extra" style="font-size:12px;color:var(--muted)">—</div></div>
       <div class="cc-row" id="cc-service-row"><div class="cc-label">Сервис</div><div class="cc-val" id="cc-service" style="font-size:12px;color:var(--muted)">—</div></div>
       <div class="cc-row"><div class="cc-label">День визита</div><div class="cc-val"><span class="badge" id="cc-day">—</span></div></div>
@@ -287,6 +291,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div class="drinks-list" id="drinks-list"><div class="empty-state">Сначала выберите клиента</div></div>
 
     <div class="section-title">Счётчики аппарата</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5">В случае наличия на кофеаппарате только одного показания — обе графы заполнить одинаково.</div>
     <div class="input-grid">
       <div class="input-group">
         <label>Общий счётчик</label>
@@ -997,6 +1002,21 @@ function onMachineChange() {
   if (svcRow) svcRow.style.display = 'flex';
 
   // Placeholder счётчиков = последние значения по аппарату
+  // Последний визит по выбранному аппарату
+  const _lvRow = document.getElementById('cc-last-visit-row');
+  const _lvVal = document.getElementById('cc-last-visit');
+  if (_lvRow && _lvVal && machId) {
+    const _lv = visitsData.filter(v =>
+      String(v[0]).trim() === name
+    ).sort((a,b) => (b[1]>a[1]?1:-1))[0];
+    if (_lv) {
+      _lvRow.style.display = '';
+      _lvVal.textContent = fmtDate(_lv[1]);
+    } else {
+      _lvRow.style.display = 'none';
+    }
+  }
+
   const _gi = document.getElementById('general-counter');
   const _ei = document.getElementById('engineer-counter');
   if (_gi && machId) {
@@ -1288,13 +1308,13 @@ async function loadDash() {
     // curDate/prevDate уже в формате DD.MM.YYYY
 
     // Строки таблицы "Продано за период"
-    const soldRows = allDrinks.map(d => {
+    const soldRows = allDrinks.sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(d => {
       const cur  = getCounter(d.name, curDate);
       const prev = getCounter(d.name, prevDate);
       const sold = (cur!==null && prev!==null) ? Math.max(0, cur-prev) : null;
       return {
         name: d.name, size: d.size,
-        mol: d.mol, vis: d.vis, shok: d.shok, moroz: d.moroz,
+        kofe: d.kofe, mol: d.mol, vis: d.vis, shok: d.shok, moroz: d.moroz,
         cur, prev, sold,
         molKg:   (sold!==null && d.mol)   ? +(sold*parseFloat(d.mol)).toFixed(3)   : null,
         visKg:   (sold!==null && d.vis)   ? +(sold*parseFloat(d.vis)).toFixed(3)   : null,
@@ -1357,7 +1377,14 @@ async function loadDash() {
       ${cl?.service? ir('Сервис',         cl.service) : ''}
       ${cl?.bonus  ? ir('Бонус/прочее',   cl.bonus) : ''}
       ${cl?.koef   ? ir('Коеф. кофе',     cl.koef)  : ''}
-      ${activeMachines.length ? ir('Аппараты', activeMachines.map(m=>`${m.id} — ${m.model}`).join('<br>')) : ''}
+      ${activeMachines.length ? `<div class="cc-row">
+        <div class="cc-label">Аппараты</div>
+        <div class="cc-val">${activeMachines.map(m => {
+          const lastV = myVisits.find(v => !selMach || String(v[1]||'').trim()===m.id);
+          const lastDate = lastV ? fmtDate(lastV[1]) : '—';
+          return m.id + ' — ' + m.model + '<br><span style="font-size:10px;color:var(--muted)">последний визит: ' + lastDate + '</span>';
+        }).join('<br><br>')}</div>
+      </div>` : ''}
       ${visitMachObj?.service ? ir('Сервис аппарата', visitMachObj.service) : ''}
     </div>
 
@@ -1392,29 +1419,32 @@ async function loadDash() {
     </div>
     <div class="info-card" style="overflow-x:auto;padding:0">
       <table class="visits-table" style="min-width:580px">
-        <tr>
-          <th style="text-align:left;min-width:120px">Напиток</th>
-          <th>Мол.кг</th>
-          <th>Вис.кг</th>
-          <th>Шок.кг</th>
-          <th>Мор.кг</th>
-          <th style="color:var(--muted)">Счётч.<br>пред</th>
-          <th style="color:var(--muted)">Счётч.<br>тек</th>
-          <th style="color:var(--accent)">Продано<br>шт</th>
+        <tr style="font-size:10px">
+          <th style="text-align:left;min-width:100px;padding:6px 8px">Напиток</th>
+          <th style="padding:6px 4px">Кофе<br>г</th>
+          <th style="padding:6px 4px">Мол.<br>кг</th>
+          <th style="padding:6px 4px">Вис.<br>кг</th>
+          <th style="padding:6px 4px">Шок.<br>кг</th>
+          <th style="padding:6px 4px">Мор.<br>кг</th>
+          <th style="color:var(--muted);padding:6px 4px">Счётч.<br>пред</th>
+          <th style="color:var(--muted);padding:6px 4px">Счётч.<br>тек</th>
+          <th style="color:var(--accent);padding:6px 4px">Продано<br>порций</th>
         </tr>
-        ${soldRows.map(r=>`<tr>
-          <td>${r.name}<br><span style="font-size:9px;color:var(--muted)">${r.size} мл</span></td>
-          <td style="text-align:center">${r.mol||'—'}</td>
-          <td style="text-align:center">${r.vis||'—'}</td>
-          <td style="text-align:center">${r.shok||'—'}</td>
-          <td style="text-align:center">${r.moroz||'—'}</td>
-          <td style="text-align:center;color:var(--muted)">${r.prev!==null?r.prev:'—'}</td>
-          <td style="text-align:center;color:var(--muted)">${r.cur!==null?r.cur:'—'}</td>
-          <td style="text-align:center;font-weight:700;color:var(--accent)">${r.sold!==null?r.sold:'—'}</td>
+        ${soldRows.map(r=>`<tr style="font-size:11px">
+          <td style="padding:5px 8px">${r.name}<br><span style="font-size:9px;color:var(--muted)">${r.size} мл</span></td>
+          <td style="text-align:center;padding:5px 4px;color:var(--accent)">${r.kofe!=null?r.kofe+'г':'—'}</td>
+          <td style="text-align:center;padding:5px 4px">${r.mol||'—'}</td>
+          <td style="text-align:center;padding:5px 4px">${r.vis||'—'}</td>
+          <td style="text-align:center;padding:5px 4px">${r.shok||'—'}</td>
+          <td style="text-align:center;padding:5px 4px">${r.moroz||'—'}</td>
+          <td style="text-align:center;padding:5px 4px;color:var(--muted)">${r.prev!==null?r.prev:'—'}</td>
+          <td style="text-align:center;padding:5px 4px;color:var(--muted)">${r.cur!==null?r.cur:'—'}</td>
+          <td style="text-align:center;padding:5px 4px;font-weight:700;color:var(--accent)">${r.sold!==null?r.sold:'—'}</td>
         </tr>`).join('')}
         <!-- ИТОГО -->
         <tr style="border-top:2px solid var(--border);background:var(--bg3)">
           <td style="font-weight:700;font-family:var(--font-head);font-size:10px">ИТОГО</td>
+          <td></td>
           <td style="text-align:center;color:var(--green);font-weight:700">${totalMol.toFixed(3)}</td>
           <td style="text-align:center;color:var(--purple);font-weight:700">${totalVis.toFixed(3)}</td>
           <td style="text-align:center;color:var(--accent);font-weight:700">${totalShok.toFixed(3)}</td>
@@ -1424,7 +1454,7 @@ async function loadDash() {
         </tr>
         <!-- С НИХ + ВСЕГО -->
         <tr style="background:var(--bg2)">
-          <td colspan="8" style="padding:10px 12px;font-size:12px">
+          <td colspan="9" style="padding:10px 12px;font-size:12px">
             <span style="color:var(--muted)">с них:</span>
             вендинг <b style="color:var(--purple)">${vendingSold} шт</b>
             &nbsp;·&nbsp;
