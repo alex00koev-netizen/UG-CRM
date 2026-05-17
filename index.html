@@ -914,6 +914,43 @@ async function fetchAllData() {
   }
 }
 
+
+// ── Проверка остатков (подсветка если значение неожиданное) ──────────────
+function checkOstatok(id, autoVal, label) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  const val = parseFloat(inp.value);
+  if (isNaN(val)) return;
+  // Подсвечиваем красным если остаток больше нормы (вероятная ошибка ввода)
+  if (autoVal != null && val > autoVal * 2 && val > 1) {
+    inp.style.borderColor = 'var(--danger)';
+  } else {
+    inp.style.borderColor = '';
+  }
+}
+
+// ── Проверка разницы счётчиков ────────────────────────────────────────────
+function checkCounterDiff() {
+  const gen = parseFloat(document.getElementById('general-counter')?.value);
+  const eng = parseFloat(document.getElementById('engineer-counter')?.value);
+  const warn = document.getElementById('counter-diff-warn');
+  if (!warn) return;
+  if (!isNaN(gen) && !isNaN(eng)) {
+    const diff = eng - gen;
+    if (eng < gen) {
+      warn.style.display = 'block';
+      warn.style.background = 'rgba(255,107,107,.15)';
+      warn.style.borderColor = 'var(--danger)';
+      warn.style.color = 'var(--danger)';
+      warn.textContent = '⚠ Промежуточный счётчик меньше Общего!';
+    } else {
+      warn.style.display = 'none';
+    }
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
 function populateSelects() {
   const names = clientsData.map(c => c.name);
   ['visit-client','dash-client','chg-client'].forEach(id => {
@@ -1108,8 +1145,9 @@ async function submitVisit() {
   try {
     const di = document.getElementById('visit-date').value;
     let ds;
-    if (di) { const [y,m,d]=di.split('-'); ds=`${d}.${m}.${y}`; }
-    else { const n=new Date(); ds=`${String(n.getDate()).padStart(2,'0')}.${String(n.getMonth()+1).padStart(2,'0')}.${n.getFullYear()}`; }
+    // Передаём дату в ISO формате YYYY-MM-DD — Apps Script convertDates преобразует в Date объект
+    if (di) { ds = di; }  // уже в формате YYYY-MM-DD из input[type=date]
+    else { const n=new Date(); ds=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
 
     // Визиты: A=НазвТТ,B=Дата,C=ТП,
     //  D=ОстКоф,E=ОстМол,F=ОстВис,G=ОстШок,H=ОстМор,
@@ -1120,7 +1158,7 @@ async function submitVisit() {
     const row = [
       client,            // A НазвТТ
       ds,                // B Дата
-      CFG.name,          // C Торг.представитель
+      (clientsData.find(c=>c.name===client)?.tp || CFG.name),  // C Торг.представитель (из справочника)
       visitNote,         // D(3) Примечание
       v('ost-kofe'),     // E(4) Ост.кофе
       v('ost-mol'),      // F(5) Ост.молоко
@@ -1603,7 +1641,7 @@ async function submitChange() {
   const type    = document.querySelector('input[name="chg-type"]:checked')?.value;
   if (!client||!machine||!type) { showToast('Заполните все поля', true); return; }
   const di=document.getElementById('chg-date').value;
-  const ds=di?(()=>{const[y,m,d]=di.split('-');return`${d}.${m}.${y}`})():new Date().toLocaleDateString('uk-UA');
+  const ds=di?di:(()=>{const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`})();
   const note=document.getElementById('chg-note').value.trim();
   const rows=[];
   if (type==='норматив') {
