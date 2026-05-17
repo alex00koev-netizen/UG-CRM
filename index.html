@@ -1138,6 +1138,17 @@ async function submitVisit() {
   const client = document.getElementById('visit-client').value;
   if (!client) { showToast('Выберите клиента', true); return; }
   const machine = document.getElementById('visit-machine').value || '';
+
+  // Проверка: должны быть заполнены хотя бы остатки ИЛИ хотя бы заявка
+  const _hasOst = ['ost-kofe','ost-mol','ost-vis','ost-shok','ost-moroz']
+    .some(id => { const v = parseFloat(document.getElementById(id)?.value); return !isNaN(v) && v > 0; });
+  const _hasZay = ['zay-kofe','zay-mol','zay-vis','zay-shok','zay-moroz']
+    .some(id => { const v = parseFloat(document.getElementById(id)?.value); return !isNaN(v) && v > 0; });
+  if (!_hasOst && !_hasZay) {
+    showToast('Заполните остатки или заявку перед отправкой', true);
+    return;
+  }
+
   const btn = document.getElementById('btn-submit');
   const sp  = document.getElementById('submit-spinner');
   const lb  = document.getElementById('submit-label');
@@ -1145,9 +1156,14 @@ async function submitVisit() {
   try {
     const di = document.getElementById('visit-date').value;
     let ds;
-    // Передаём дату в ISO формате YYYY-MM-DD — Apps Script convertDates преобразует в Date объект
-    if (di) { ds = di; }  // уже в формате YYYY-MM-DD из input[type=date]
-    else { const n=new Date(); ds=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
+    // Передаём дату в формате DD.MM.YYYY — Apps Script parseDate делает локальную дату (без UTC сдвига)
+    if (di) {
+      const [y,m,d] = di.split('-');
+      ds = `${d}.${m}.${y}`;  // DD.MM.YYYY
+    } else {
+      const n = new Date();
+      ds = `${String(n.getDate()).padStart(2,'0')}.${String(n.getMonth()+1).padStart(2,'0')}.${n.getFullYear()}`;
+    }
 
     // Визиты: A=НазвТТ,B=Дата,C=ТП,
     //  D=ОстКоф,E=ОстМол,F=ОстВис,G=ОстШок,H=ОстМор,
@@ -1641,7 +1657,7 @@ async function submitChange() {
   const type    = document.querySelector('input[name="chg-type"]:checked')?.value;
   if (!client||!machine||!type) { showToast('Заполните все поля', true); return; }
   const di=document.getElementById('chg-date').value;
-  const ds=di?di:(()=>{const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`})();
+  const ds=di?(()=>{const[y,m,d]=di.split('-');return`${d}.${m}.${y}`})():(()=>{const n=new Date();return`${String(n.getDate()).padStart(2,'0')}.${String(n.getMonth()+1).padStart(2,'0')}.${n.getFullYear()}`})();
   const note=document.getElementById('chg-note').value.trim();
   const rows=[];
   if (type==='норматив') {
