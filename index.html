@@ -936,13 +936,13 @@ function checkCounterDiff() {
   const warn = document.getElementById('counter-diff-warn');
   if (!warn) return;
   if (!isNaN(gen) && !isNaN(eng)) {
-    const diff = eng - gen;
-    if (eng < gen) {
+    if (eng > gen) {
+      // Промежуточный > Общий — это ошибка
       warn.style.display = 'block';
       warn.style.background = 'rgba(255,107,107,.15)';
       warn.style.borderColor = 'var(--danger)';
       warn.style.color = 'var(--danger)';
-      warn.textContent = '⚠ Промежуточный счётчик меньше Общего!';
+      warn.textContent = '⚠ Промежуточный счётчик больше Общего — проверьте данные!';
     } else {
       warn.style.display = 'none';
     }
