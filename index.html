@@ -1181,43 +1181,44 @@ async function submitVisit() {
       v('zay-shok'),     // M(12) Заявка шоколад
       v('zay-moroz'),    // N(13) Заявка мороженое
     ];
-    // Записываем визит только если заполнены остатки или заявка
+    // Собираем все запросы и отправляем параллельно
+    const serial = document.getElementById('visit-machine').value || '';
+    const drinks = window._filteredDrinks || [];
+    const promises = [];
+
+    // 1. Визит — только если есть остатки или заявка
     const _hasOst = [4,5,6,7,8].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
     const _hasZay = [9,10,11,12,13].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
     if (_hasOst || _hasZay) {
-      await scriptPost({ action:'addVisit', row });
+      promises.push(scriptPost({ action:'addVisit', row }));
     }
 
-    // Счётчики расхода: НазвТТ, Серийный, Дата, Напиток, Счётчик
-    // Общий и инженерный НЕ сюда — они в Общие счётчики
-    const serial = document.getElementById('visit-machine').value || '';
-    const drinks = window._filteredDrinks || [];
+    // 2. Счётчики расхода по напиткам
     const cRows = [];
     drinks.forEach((d,i) => {
       const val = parseInt(document.getElementById('drink-'+i)?.value||0);
-      // Счётчики: A=НазвТТ, B=Серийный, C=Дата, D=Напиток, E=Тип(формула), F=Счётчик
       if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
-    if (cRows.length) await scriptPost({ action:'addCounters', rows:cRows });
+    if (cRows.length) promises.push(scriptPost({ action:'addCounters', rows:cRows }));
 
-    // Общие счётчики: НазвТТ, Серийный, Дата, Инж.счётчик, Общий счётчик
+    // 3. Общие счётчики
     const gen = v('general-counter');
     const eng = v('engineer-counter');
     if (gen || eng) {
-      await scriptPost({ action:'addGenCounters', row:[client, serial, ds, gen||'', eng||''] });
+      promises.push(scriptPost({ action:'addGenCounters', row:[client, serial, ds, gen||'', eng||''] }));
     }
 
+    // Отправляем всё одновременно
+    await Promise.all(promises);
     showToast('✓ Визит сохранён!');
-    // Запоминаем выбранного клиента и машину
+    // Запоминаем клиента и машину — НЕ перезагружаем все данные (долго)
     const savedClient  = document.getElementById('visit-client').value;
     const savedMachine = document.getElementById('visit-machine').value;
     resetForm();
-    await fetchAllData();
-    // Восстанавливаем клиента и машину после перезагрузки
+    // Восстанавливаем клиента и машину без полной перезагрузки
     if (savedClient) {
       document.getElementById('visit-client').value = savedClient;
       onClientChange();
-      // Восстановить аппарат
       setTimeout(() => {
         const machSel = document.getElementById('visit-machine');
         if (machSel && savedMachine) machSel.value = savedMachine;
