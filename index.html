@@ -1139,16 +1139,6 @@ async function submitVisit() {
   if (!client) { showToast('Выберите клиента', true); return; }
   const machine = document.getElementById('visit-machine').value || '';
 
-  // Проверка: должны быть заполнены хотя бы остатки ИЛИ хотя бы заявка
-  const _hasOst = ['ost-kofe','ost-mol','ost-vis','ost-shok','ost-moroz']
-    .some(id => { const v = parseFloat(document.getElementById(id)?.value); return !isNaN(v) && v > 0; });
-  const _hasZay = ['zay-kofe','zay-mol','zay-vis','zay-shok','zay-moroz']
-    .some(id => { const v = parseFloat(document.getElementById(id)?.value); return !isNaN(v) && v > 0; });
-  if (!_hasOst && !_hasZay) {
-    showToast('Заполните остатки или заявку перед отправкой', true);
-    return;
-  }
-
   const btn = document.getElementById('btn-submit');
   const sp  = document.getElementById('submit-spinner');
   const lb  = document.getElementById('submit-label');
@@ -1187,7 +1177,12 @@ async function submitVisit() {
       v('zay-shok'),     // M(12) Заявка шоколад
       v('zay-moroz'),    // N(13) Заявка мороженое
     ];
-    await scriptPost({ action:'addVisit', row });
+    // Записываем визит только если заполнены остатки или заявка
+    const _hasOst = [4,5,6,7,8].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
+    const _hasZay = [9,10,11,12,13].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
+    if (_hasOst || _hasZay) {
+      await scriptPost({ action:'addVisit', row });
+    }
 
     // Счётчики расхода: НазвТТ, Серийный, Дата, Напиток, Счётчик
     // Общий и инженерный НЕ сюда — они в Общие счётчики
