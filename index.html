@@ -1091,7 +1091,11 @@ function onMachineChange() {
   const allDrinks = (drinksData[name] || []).filter(d => {
     if (machId && d.serial && d.serial !== machId) return false;
     return d.size && String(d.size).trim() !== '';
-  }).sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }).sort((a, b) => {
+    const nameCompare = a.name.localeCompare(b.name, 'ru');
+    if (nameCompare !== 0) return nameCompare;
+    return (parseInt(a.size)||0) - (parseInt(b.size)||0);
+  });
 
   // Скрывать остатки/заявку для позиций без нормы
   const hasVis   = allDrinks.some(d => d.vis  != null);
