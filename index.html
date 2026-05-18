@@ -1369,15 +1369,17 @@ async function loadDash() {
     }
 
     function getGenCounter(type, date) {
-      // Общие счётчики: 0=НазвТТ,1=Серийный,2=Дата,3=Инж,4=Общий
+      // Общие счётчики: 0=НазвТТ,1=Серийный,2=Дата,3=Общий,4=Промеж
+      // Ищем последнюю запись ДО (включительно) указанной даты
       if (!date) return null;
       const d = fmtDate(date);
-      const row = (window._allGenCounters||[]).find(r =>
+      const rows = (window._allGenCounters||[]).filter(r =>
         String(r[0]).trim() === client &&
-        fmtDate(r[2]) === d &&
-        (!selMach || !r[1] || String(r[1]).trim() === selMach)
-      );
-      if (!row) return null;
+        (!selMach || !r[1] || String(r[1]).trim() === selMach) &&
+        fmtDate(r[2]) <= d
+      ).sort((a,b) => fmtDate(b[2]).localeCompare(fmtDate(a[2])));
+      if (!rows.length) return null;
+      const row = rows[0];
       return type === 'промеж' ? parseFloat(row[4])||0 : parseFloat(row[3])||0;
     }
 
@@ -1406,11 +1408,12 @@ async function loadDash() {
 
     // "С них": кофе и вендинг — берём из листа "Общие счётчики" col G и H
     // _allGenCounters: row[6]=С них:Кофе, row[7]=С них:Вендинг
-    const _gcRow = (window._allGenCounters||[]).find(r =>
-      String(r[0]).trim()===client &&
-      String(r[1]).trim()===selMach &&
-      fmtDate(r[2])===curDate
-    );
+    const _gcRow = (window._allGenCounters||[])
+      .filter(r =>
+        String(r[0]).trim()===client &&
+        (!selMach || String(r[1]).trim()===selMach) &&
+        fmtDate(r[2])<=curDate
+      ).sort((a,b)=>fmtDate(b[2]).localeCompare(fmtDate(a[2])))[0] || null;
     const coffeeSold  = _gcRow ? (parseFloat(_gcRow[6])||0) : soldRows.filter(r=>!r.type||r.type==='кофе').reduce((s,r)=>s+(r.sold??0),0);
     const vendingSold = _gcRow ? (parseFloat(_gcRow[7])||0) : soldRows.filter(r=>r.type==='вендинг').reduce((s,r)=>s+(r.sold??0),0);
     const totalAll    = vendingSold + coffeeSold;
