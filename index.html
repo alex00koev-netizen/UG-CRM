@@ -286,10 +286,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="input-group" id="zay-moroz-wrap"><label>Мороженое</label><input inputmode="decimal" type="number" id="zay-moroz" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
     </div>
 
-    <div class="section-title">Счётчики по напиткам</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Показаны только напитки у которых заданы нормы расхода</div>
-    <div class="drinks-list" id="drinks-list"><div class="empty-state">Сначала выберите клиента</div></div>
-
     <div class="section-title">Счётчики аппарата</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5">В случае наличия на кофеаппарате только одного показания — обе графы заполнить одинаково.</div>
     <div class="input-grid">
@@ -305,6 +301,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       </div>
     </div>
     <div id="counter-diff-warn" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(255,107,107,.15);border:1px solid var(--danger);border-radius:10px;font-size:13px;color:var(--danger);font-weight:600"></div>
+
+    <div class="section-title">Счётчики по напиткам</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Показаны только напитки у которых заданы нормы расхода</div>
+    <div class="drinks-list" id="drinks-list"><div class="empty-state">Сначала выберите клиента</div></div>
 
     <div class="section-title">Пожелание</div>
     <textarea class="input-textarea" id="visit-note" placeholder="Замечания по информации, важные примечания к визиту"></textarea>
@@ -426,14 +426,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           <option>понедельник</option><option>вторник</option><option>среда</option>
           <option>четверг</option><option>пятница</option><option>суббота</option>
         </select>
-      </div><div class="input-group full">
-        <label>Бонус / Условия</label>
-        <input type="text" id="nc-bonus" placeholder="10+1, стакан 175мл">
       </div>
-      <div class="input-group full">
-        <label>Сервис клиента</label>
-        <input type="text" id="nc-service" placeholder="ТО каждые 3 мес.">
-      </div>
+
     </div>
 
     <!-- АППАРАТ -->
@@ -471,10 +465,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <label>Доп. инвентарь (к этому аппарату)</label>
         <input type="text" id="nc-extra" placeholder="стенд, органайзер, стабилизатор">
       </div>
-      <div class="input-group full">
-        <label>Сервис аппарата</label>
-        <input type="text" id="nc-eq-service" placeholder="ТО каждые 2000 порций">
-      </div>
+
     </div>
 
     <!-- НАПИТКИ И НОРМЫ -->
