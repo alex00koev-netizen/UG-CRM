@@ -1335,19 +1335,26 @@ async function loadDash() {
     const curDate  = targetVisit ? fmtDate(targetVisit[1]) : null;
     const prevDate = prevVisit   ? fmtDate(prevVisit[1])   : null;
 
-    function getCounter(drink, date, size) {
+    function getCounterRow(drink, date, size) {
+      // Возвращает всю строку счётчика по напитку+дата+стакан
       if (!date) return null;
       const d = fmtDate(date);
       const dk = String(drink||'').trim().toLowerCase();
-      // Счётчики расхода: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Стакан,5=Счётчик
-      const row = myCounters.find(r =>
+      // Счётчики расхода: 0=НазвТТ,1=Серийный,2=Дата,3=Напиток,4=Стакан,5=Счётчик,6=Продано
+      return myCounters.find(r =>
         String(r[3]||'').trim().toLowerCase() === dk &&
         fmtDate(r[2]) === d &&
         (!selMach || !r[1] || String(r[1]).trim() === selMach) &&
         (!size || !r[4] || String(r[4]).trim() === String(size).trim())
-      );
-      // col F (index 5) = Счётчик (col E=Стакан)
-      return row != null ? (parseFloat(row[5])||0) : null;
+      ) || null;
+    }
+    function getCounter(drink, date, size) {
+      const row = getCounterRow(drink, date, size);
+      return row ? (parseFloat(row[5])||0) : null;  // col F = Счётчик
+    }
+    function getSold(drink, date, size) {
+      const row = getCounterRow(drink, date, size);
+      return row ? (parseFloat(row[6])||0) : null;  // col G = Продано порций
     }
 
     function getGenCounter(type, date) {
@@ -1363,15 +1370,11 @@ async function loadDash() {
       return type === 'промеж' ? parseFloat(row[4])||0 : parseFloat(row[3])||0;
     }
 
-    // getCounter ищет по имени напитка и дате визита
-    // Счётчики: 0=Клиент,1=МашинаID,2=Дата,3=Напиток,4=Счётчик,5=Продано
-    // curDate/prevDate уже в формате DD.MM.YYYY
-
-    // Строки таблицы "Продано за период"
+    // soldRows: cur/prev = счётчик (col F), sold = Продано порций (col G) напрямую
     const soldRows = allDrinks.sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(d => {
-      const cur  = getCounter(d.name, curDate, d.size);
-      const prev = getCounter(d.name, prevDate, d.size);
-      const sold = (cur!==null && prev!==null) ? Math.max(0, cur-prev) : null;
+      const cur  = getCounter(d.name, curDate, d.size);   // col F текущий счётчик
+      const prev = getCounter(d.name, prevDate, d.size);  // col F предыдущий счётчик
+      const sold = getSold(d.name, curDate, d.size);      // col G = Продано порций
       return {
         name: d.name, size: d.size, type: d.type||'',
         kofe: d.kofe, mol: d.mol, vis: d.vis, shok: d.shok, moroz: d.moroz,
