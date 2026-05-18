@@ -361,9 +361,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">
         <input type="radio" name="chg-type" value="аппарат" onchange="onChangeType('аппарат')"> <span style="font-size:14px">Смена / добавление аппарата</span>
       </label>
-      <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">
-        <input type="radio" name="chg-type" value="контакт" onchange="onChangeType('контакт')"> <span style="font-size:14px">Контакт / примечание</span>
-      </label>
+
       <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:1px solid rgba(255,107,107,.4);border-radius:var(--radius);cursor:pointer">
         <input type="radio" name="chg-type" value="деактивация" onchange="onChangeType('деактивация')">
         <span style="font-size:14px;color:var(--danger)">⛔ Снятие торговой точки (деактивация)</span>
@@ -428,12 +426,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           <option>понедельник</option><option>вторник</option><option>среда</option>
           <option>четверг</option><option>пятница</option><option>суббота</option>
         </select>
-      </div>
-      <div class="input-group">
-        <label>Отсрочка (дней)</label>
-        <input inputmode="decimal" type="number" id="nc-otsr" placeholder="7">
-      </div>
-      <div class="input-group full">
+      </div><div class="input-group full">
         <label>Бонус / Условия</label>
         <input type="text" id="nc-bonus" placeholder="10+1, стакан 175мл">
       </div>
@@ -482,19 +475,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <label>Сервис аппарата</label>
         <input type="text" id="nc-eq-service" placeholder="ТО каждые 2000 порций">
       </div>
-    </div>
-
-    <!-- ПРАЙС -->
-    <div class="section-title">Прайс (грн/кг)</div>
-    <div class="input-grid">
-      <div class="input-group"><label>Classic</label><input inputmode="numeric" type="number" id="nc-p-classic" step="1" placeholder="1000"></div>
-      <div class="input-group"><label>Rosso</label><input inputmode="numeric" type="number" id="nc-p-rosso" step="1" placeholder="600"></div>
-      <div class="input-group"><label>Blu</label><input inputmode="numeric" type="number" id="nc-p-blu" step="1" placeholder="600"></div>
-      <div class="input-group"><label>Arabica</label><input inputmode="numeric" type="number" id="nc-p-arabica" step="1" placeholder="700"></div>
-      <div class="input-group"><label>Топинг</label><input inputmode="numeric" type="number" id="nc-p-toping" step="1" placeholder="500"></div>
-      <div class="input-group"><label>Ирл.виски</label><input inputmode="numeric" type="number" id="nc-p-viski" step="1" placeholder="550"></div>
-      <div class="input-group"><label>Исп.крем</label><input inputmode="numeric" type="number" id="nc-p-krem" step="1" placeholder=""></div>
-      <div class="input-group"><label>Шоколад</label><input inputmode="numeric" type="number" id="nc-p-shok" step="1" placeholder="550"></div>
     </div>
 
     <!-- НАПИТКИ И НОРМЫ -->
@@ -836,6 +816,7 @@ async function fetchAllData() {
           shok:  r[9] != null && r[9] !== '' ? r[9] : null,
           moroz: r[10] != null && r[10] !== '' ? r[10] : null,
           type:  r[11] != null ? String(r[11]).trim() : '',
+          order: r[14] != null && r[14] !== '' ? parseFloat(r[14]) : 9999,
         });
       }
     });
@@ -1098,8 +1079,9 @@ function onMachineChange() {
     if (machId && d.serial && d.serial !== machId) return false;
     return d.size && String(d.size).trim() !== '';
   }).sort((a, b) => {
-    const nameCompare = a.name.localeCompare(b.name, 'ru');
-    if (nameCompare !== 0) return nameCompare;
+    const oa = a.order !== 9999 ? a.order : 99999;
+    const ob = b.order !== 9999 ? b.order : 99999;
+    if (oa !== ob) return oa - ob;
     return (parseInt(a.size)||0) - (parseInt(b.size)||0);
   });
 
@@ -1384,7 +1366,11 @@ async function loadDash() {
     }
 
     // soldRows: cur/prev = счётчик (col F), sold = Продано порций (col G) напрямую
-    const soldRows = allDrinks.sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(d => {
+    const soldRows = allDrinks.sort((a,b)=>{
+      const oa=a.order!==9999?a.order:99999; const ob=b.order!==9999?b.order:99999;
+      if(oa!==ob) return oa-ob;
+      return (parseInt(a.size)||0)-(parseInt(b.size)||0);
+    }).map(d => {
       const cur  = getCounter(d.name, curDate, d.size);   // col F текущий счётчик
       const prev = getCounter(d.name, prevDate, d.size);  // col F предыдущий счётчик
       const sold = getSold(d.name, curDate, d.size);      // col G = Продано порций
@@ -1539,6 +1525,7 @@ async function loadDash() {
       <table class="visits-table" style="min-width:580px">
         <tr style="font-size:10px">
           <th style="text-align:left;min-width:100px;padding:6px 8px">Напиток</th>
+          <th style="color:var(--accent);padding:6px 4px">Продано<br>порций</th>
           <th style="padding:6px 4px">Кофе<br>кг</th>
           <th style="padding:6px 4px">Мол.<br>кг</th>
           <th style="padding:6px 4px">Вис.<br>кг</th>
@@ -1546,10 +1533,10 @@ async function loadDash() {
           <th style="padding:6px 4px">Мор.<br>кг</th>
           <th style="color:var(--muted);padding:6px 4px">Счётч.<br>пред</th>
           <th style="color:var(--muted);padding:6px 4px">Счётч.<br>тек</th>
-          <th style="color:var(--accent);padding:6px 4px">Продано<br>порций</th>
         </tr>
         ${soldRows.map(r=>`<tr style="font-size:11px">
           <td style="padding:5px 8px">${r.name}<br><span style="font-size:9px;color:var(--muted)">${r.size} мл</span></td>
+          <td style="text-align:center;padding:5px 4px;font-weight:700;color:var(--accent)">${r.sold!==null?r.sold:'—'}</td>
           <td style="text-align:center;padding:5px 4px;color:var(--accent)">${r.kofe!=null?r.kofe:'—'}</td>
           <td style="text-align:center;padding:5px 4px">${r.mol||'—'}</td>
           <td style="text-align:center;padding:5px 4px">${r.vis||'—'}</td>
@@ -1557,13 +1544,12 @@ async function loadDash() {
           <td style="text-align:center;padding:5px 4px">${r.moroz||'—'}</td>
           <td style="text-align:center;padding:5px 4px;color:var(--muted)">${r.prev!==null?r.prev:'—'}</td>
           <td style="text-align:center;padding:5px 4px;color:var(--muted)">${r.cur!==null?r.cur:'—'}</td>
-          <td style="text-align:center;padding:5px 4px;font-weight:700;color:var(--accent)">${r.sold!==null?r.sold:'—'}</td>
         </tr>`).join('')}
         <!-- ИТОГО -->
         <tr style="border-top:2px solid var(--border);background:var(--bg3)">
           <td style="font-weight:700;font-family:var(--font-head);font-size:10px">ИТОГО</td>
-          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
           <td style="text-align:center;font-weight:700;font-size:16px;color:var(--accent)">${totalSold}</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
         </tr>
         <!-- С НИХ + ВСЕГО -->
         <tr style="background:var(--bg2)">
