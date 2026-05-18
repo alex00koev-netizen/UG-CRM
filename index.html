@@ -659,7 +659,13 @@ function fmtDate(val) {
   }
   if (val instanceof Date || typeof val === 'number') {
     const d = new Date(val);
-    if (!isNaN(d)) return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+    if (!isNaN(d)) {
+      // Используем UTC методы чтобы избежать сдвига часового пояса
+      const day = String(d.getUTCDate()).padStart(2,'0');
+      const mon = String(d.getUTCMonth()+1).padStart(2,'0');
+      const yr  = d.getUTCFullYear();
+      return `${day}.${mon}.${yr}`;
+    }
   }
   return String(val).split('T')[0];
 }
@@ -1257,13 +1263,18 @@ function onDashClientChange() {
   dateSel.innerHTML = '<option value="">— дата визита —</option>';
   if (!name) return;
   // Аппараты
-  (equipmentData[name]||[]).filter(m=>String(m.status||'').toLowerCase()==='активна').forEach(m => {
+  const activeMachs = (equipmentData[name]||[]).filter(m=>String(m.status||'').toLowerCase()==='активна');
+  activeMachs.forEach(m => {
     const opt=document.createElement('option'); opt.value=m.id; opt.textContent=`${m.id} — ${m.model}`; machSel.appendChild(opt);
   });
+  // Автовыбор если один аппарат
+  if (activeMachs.length === 1) {
+    machSel.value = activeMachs[0].id;
+  }
   // Даты визитов — уникальные, отсортированные по убыванию
   // Визиты: col1=Дата
   const dates = [...new Set(
-    visitsData.filter(r => String(r[0]).trim()===name && String(r[18]||'').toLowerCase()!=='доп.загрузка')
+    visitsData.filter(r => String(r[0]).trim()===name && String(r[3]||'').toLowerCase()!=='доп.загрузка')
       .map(r => fmtDate(r[1]))
       .filter(Boolean)
   )].sort((a,b) => b.localeCompare(a)); // сортируем от новых к старым
