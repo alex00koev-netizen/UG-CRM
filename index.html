@@ -507,7 +507,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.1';
+const APP_VERSION = '3.2';
 
 // ══ ПОЛЬЗОВАТЕЛИ И ПРАВА ══════════════════════════════════════════════════
 // Роли: 'admin' = полный доступ | 'agent' = только свои клиенты | 'tech' = без цен и завоза
@@ -1114,9 +1114,7 @@ function onMachineChange() {
       </div>
       <div class="drink-size">${d.size} мл</div>
       <div class="drink-counter">
-        <button class="drink-btn" onclick="adjDrink(${i},-1)">−</button>
-        <input inputmode="numeric" type="number" id="drink-${i}" value="0" min="0" step="1">
-        <button class="drink-btn" onclick="adjDrink(${i},1)">+</button>
+        <input inputmode="numeric" type="number" id="drink-${i}" placeholder="" min="0" step="1" style="width:90px;text-align:center">
       </div>
     </div>`).join('');
   window._filteredDrinks = allDrinks;
@@ -1185,7 +1183,7 @@ async function submitVisit() {
     // 2. Счётчики расхода по напиткам
     const cRows = [];
     drinks.forEach((d,i) => {
-      const val = parseInt(document.getElementById('drink-'+i)?.value||0);
+      const val = parseInt(document.getElementById('drink-'+i)?.value||'0') || 0;
       if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
     if (cRows.length) promises.push(scriptPost({ action:'addCounters', rows:cRows }));
