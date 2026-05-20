@@ -507,7 +507,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.2';
+const APP_VERSION = '3.3';
 
 // ══ ПОЛЬЗОВАТЕЛИ И ПРАВА ══════════════════════════════════════════════════
 // Роли: 'admin' = полный доступ | 'agent' = только свои клиенты | 'tech' = без цен и завоза
@@ -669,14 +669,22 @@ async function safeGet(sheet, months) {
 async function scriptPost(payload, retries=2) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const r = await fetch(CFG.scriptUrl, { method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload) });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15 сек таймаут
+      const r = await fetch(CFG.scriptUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'text/plain'},
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
       if (!r.ok) throw new Error(`Ошибка сети: ${r.status}`);
       const d = await r.json();
       if (d.status === 'error') throw new Error(d.message);
       return d;
     } catch(e) {
       if (attempt < retries) {
-        await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+        await new Promise(res => setTimeout(res, 1500));
         continue;
       }
       throw e;
