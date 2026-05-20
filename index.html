@@ -666,11 +666,11 @@ async function safeGet(sheet, months) {
   try { return await scriptGet(sheet, months); }
   catch(e) { console.warn('safeGet:', sheet, e.message); return []; }
 }
-async function scriptPost(payload, retries=2) {
+async function scriptPost(payload, retries=2, timeoutMs=25000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15 сек таймаут
+      const timeout = setTimeout(() => controller.abort(), timeoutMs); // таймаут передаётся снаружи
       const r = await fetch(CFG.scriptUrl, {
         method: 'POST',
         headers: {'Content-Type':'text/plain'},
@@ -1194,7 +1194,7 @@ async function submitVisit() {
       const val = parseInt(document.getElementById('drink-'+i)?.value||'0') || 0;
       if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
-    if (cRows.length) promises.push(scriptPost({ action:'addCounters', rows:cRows }));
+    if (cRows.length) promises.push(scriptPost({ action:'addCounters', rows:cRows }, 1, 45000));
 
     // 3. Общие счётчики
     const gen = v('general-counter');
