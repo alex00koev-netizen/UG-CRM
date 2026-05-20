@@ -624,19 +624,28 @@ let visitsData    = [];
 function fmtDate(val) {
   if (!val) return '';
   if (typeof val === 'string') {
+    // DD.MM.YYYY — уже готово
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(val)) return val;
-    const m = val.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    // ISO с временем (2026-05-19T21:00:00.000Z) — парсим через Date,
+    // берём локальную дату GMT+3, иначе 21:00 UTC = 19-е, а нужно 20-е
+    if (val.includes('T')) {
+      const d = new Date(val);
+      if (!isNaN(d)) {
+        return String(d.getDate()).padStart(2,'0') + '.' +
+               String(d.getMonth()+1).padStart(2,'0') + '.' +
+               d.getFullYear();
+      }
+    }
+    // YYYY-MM-DD без времени — берём напрямую без парсинга (нет сдвига)
+    const m = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (m) return `${m[3]}.${m[2]}.${m[1]}`;
   }
   if (val instanceof Date || typeof val === 'number') {
     const d = new Date(val);
     if (!isNaN(d)) {
-      // Локальные методы — GMT+3 (Киев). UTC давало -1 день т.к.
-      // полночь по Киеву = 21:00 UTC накануне, getUTCDate() возвращал вчера.
-      const day = String(d.getDate()).padStart(2,'0');
-      const mon = String(d.getMonth()+1).padStart(2,'0');
-      const yr  = d.getFullYear();
-      return `${day}.${mon}.${yr}`;
+      return String(d.getDate()).padStart(2,'0') + '.' +
+             String(d.getMonth()+1).padStart(2,'0') + '.' +
+             d.getFullYear();
     }
   }
   return String(val).split('T')[0];
