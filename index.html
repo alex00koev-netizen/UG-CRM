@@ -631,10 +631,11 @@ function fmtDate(val) {
   if (val instanceof Date || typeof val === 'number') {
     const d = new Date(val);
     if (!isNaN(d)) {
-      // Используем UTC методы чтобы избежать сдвига часового пояса
-      const day = String(d.getUTCDate()).padStart(2,'0');
-      const mon = String(d.getUTCMonth()+1).padStart(2,'0');
-      const yr  = d.getUTCFullYear();
+      // Локальные методы — GMT+3 (Киев). UTC давало -1 день т.к.
+      // полночь по Киеву = 21:00 UTC накануне, getUTCDate() возвращал вчера.
+      const day = String(d.getDate()).padStart(2,'0');
+      const mon = String(d.getMonth()+1).padStart(2,'0');
+      const yr  = d.getFullYear();
       return `${day}.${mon}.${yr}`;
     }
   }
