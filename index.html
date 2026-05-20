@@ -185,7 +185,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-logo"><span style="font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:.05em;color:#fff">MEGA<span style="color:var(--accent)">UG</span></span></div>
+    <div class="topbar-logo" onclick="fetchAllData()" title="Обновить данные" style="cursor:pointer;user-select:none"><span style="font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:.05em;color:#fff">MEGA<span style="color:var(--accent)">UG</span></span></div>
     <div id="load-status" style="display:none;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--bg3);max-width:200px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     <div class="topbar-user"><div class="topbar-dot"></div><span id="topbar-name">—</span></div>
     <button class="topbar-settings" onclick="openConfig()">⚙</button>
