@@ -958,11 +958,20 @@ function checkCounterDiff() {
 }
 
 function populateSelects() {
-  const names = clientsData.map(c => c.name);
-  ['visit-client','dash-client','chg-client'].forEach(id => {
+  // Учитываем текущий выбранный день — не сбрасываем фильтр после обновления данных
+  const visitDay = document.getElementById('visit-day-filter')?.value || '';
+  const dashDay  = document.getElementById('dash-day-filter')?.value  || '';
+
+  const filtered = (day) => day
+    ? clientsData.filter(c => String(c.day||'').toLowerCase() === day)
+    : clientsData;
+
+  [['visit-client', visitDay], ['dash-client', dashDay], ['chg-client', visitDay]].forEach(([id, day]) => {
     const sel = document.getElementById(id); if (!sel) return;
     const cur = sel.value;
-    sel.innerHTML = `<option value="">— выберите клиента —</option>` + names.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');
+    const list = filtered(day);
+    sel.innerHTML = `<option value="">— выберите клиента —</option>` +
+      list.map(c => `<option${c.name===cur?' selected':''}>${c.name}</option>`).join('');
   });
 }
 
