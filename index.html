@@ -1336,7 +1336,7 @@ function onMachineChange() {
   document.getElementById('drinks-list').innerHTML = allDrinks.map((d, i) => `
     <div class="drink-item">
       <div style="flex:1">
-        <div class="drink-name">${d.name}</div>
+        <div class="drink-name">${d.order && d.order !== 9999 ? `<span style="color:var(--muted);font-size:12px;margin-right:6px">${d.order}.</span>` : ''}${d.name}</div>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
           ${d.kofe  ? `<span class="badge" style="font-size:10px;color:var(--accent)">☕ ${d.kofe}</span>` : ''}
           ${d.mol   ? `<span class="badge" style="font-size:10px">мол ${d.mol}</span>`   : ''}
