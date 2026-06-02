@@ -888,14 +888,15 @@ function onAdminAgentChange() {
 async function fetchFromScript(scriptUrl) {
   // Передаём scriptUrl напрямую — не трогаем глобальный CFG.scriptUrl
   // Это позволяет безопасно запускать несколько fetchFromScript параллельно
-  const [raw, spRaw, visRaw, eqRaw, gcRaw] = await Promise.all([
+  const [raw, spRaw, visRaw, eqRaw, gcRaw, scRaw] = await Promise.all([
     scriptGet('Справ. Клиенты',    undefined, scriptUrl),
     scriptGet('Справ. расх. кофе', undefined, scriptUrl),
     scriptGet('Визиты',            undefined, scriptUrl),
     scriptGet('Оборудование',      undefined, scriptUrl),
     safeGet('Общие счётчики',      6,         scriptUrl),
+    safeGet('Счетчики расхода',    undefined, scriptUrl),
   ]);
-  return { raw, spRaw, visRaw, eqRaw, gcRaw, scriptUrl };
+  return { raw, spRaw, visRaw, eqRaw, gcRaw, scRaw, scriptUrl };
 }
 
 async function fetchAllData() {
@@ -1017,7 +1018,7 @@ async function fetchAllData() {
     // 6=ОстШок, 7=ОстМор, 8=ЗаяКоф, 9=ЗаяМол, 10=ЗаяВис,
     // 11=ЗаяШок, 12=ЗаяМор, ..., 23=Примечание
     setStatus('Загружаем визиты...'); const visRaw = await scriptGet('Визиты');
-    const _sortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:''; };
+    const _sortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:'00000000'; }; // пустые даты → в конец
     visitsData = visRaw.slice(3).filter(r => r[0]).map(r => {
       const rr = [...r];
       rr[1] = fmtDate(rr[1]);  // Дата col1
@@ -1098,7 +1099,7 @@ async function fetchAllData() {
         // Мёржим визиты
         const addVisits = d.visRaw.slice(3).filter(r=>r[0]).map(r=>{const rr=[...r];rr[1]=fmtDate(rr[1]);return rr;});
         // Сортируем по дате правильно: DD.MM.YYYY → сравниваем как YYYY-MM-DD
-        const toSortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:''; };
+        const toSortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:'00000000'; };
         visitsData = visitsData.concat(addVisits)
           .sort((a,b) => _sortKey(b[1]).localeCompare(_sortKey(a[1]))); // без slice — все визиты
         // Мёржим оборудование
@@ -1122,6 +1123,30 @@ async function fetchAllData() {
               size:r[5]!=null?String(r[5]):'',mol:r[7]||null,vis:r[8]||null,shok:r[9]||null,moroz:r[10]||null,koef:r[6]||null});
           }
         });
+        // Мёржим счётчики расхода
+        if (d.scRaw) {
+          const addCounters = d.scRaw.slice(1).filter(r=>r[0]&&r[3]).map(r=>({
+            name:   String(r[0]||'').trim(),
+            serial: String(r[1]||'').trim(),
+            date:   fmtDate(r[2]),
+            drink:  String(r[3]||'').trim(),
+            size:   r[4]||0,
+            count:  r[5]||0,
+            sold:   r[6]||0,
+          }));
+          window._allCounters = (window._allCounters||[]).concat(addCounters);
+        }
+        // Мёржим общие счётчики
+        if (d.gcRaw) {
+          const addGenCounters = d.gcRaw.slice(1).filter(r=>r[0]&&r[2]).map(r=>({
+            name:   String(r[0]||'').trim(),
+            serial: String(r[1]||'').trim(),
+            date:   fmtDate(r[2]),
+            gen:    r[3]||0,
+            eng:    r[4]||0,
+          }));
+          window._allGenCounters = (window._allGenCounters||[]).concat(addGenCounters);
+        }
       });
 
       // Сохраняем полные данные для фильтра по торговому
