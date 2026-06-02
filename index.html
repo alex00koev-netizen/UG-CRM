@@ -891,7 +891,7 @@ async function fetchFromScript(scriptUrl) {
   const [raw, spRaw, visRaw, eqRaw, gcRaw] = await Promise.all([
     scriptGet('Справ. Клиенты',    undefined, scriptUrl),
     scriptGet('Справ. расх. кофе', undefined, scriptUrl),
-    scriptGet('Визиты',            6,         scriptUrl),
+    scriptGet('Визиты',            undefined, scriptUrl),
     scriptGet('Оборудование',      undefined, scriptUrl),
     safeGet('Общие счётчики',      6,         scriptUrl),
   ]);
@@ -1016,7 +1016,7 @@ async function fetchAllData() {
     // 0=НазвТТ, 1=Дата, 2=ТП, 3=ОстКоф, 4=ОстМол, 5=ОстВис,
     // 6=ОстШок, 7=ОстМор, 8=ЗаяКоф, 9=ЗаяМол, 10=ЗаяВис,
     // 11=ЗаяШок, 12=ЗаяМор, ..., 23=Примечание
-    setStatus('Загружаем визиты...'); const visRaw = await scriptGet('Визиты', 6);
+    setStatus('Загружаем визиты...'); const visRaw = await scriptGet('Визиты');
     const _sortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:''; };
     visitsData = visRaw.slice(3).filter(r => r[0]).map(r => {
       const rr = [...r];
