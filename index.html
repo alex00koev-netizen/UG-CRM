@@ -1021,7 +1021,7 @@ async function fetchAllData() {
       const rr = [...r];
       rr[1] = fmtDate(rr[1]);  // Дата col1
       return rr;
-    }).reverse().slice(0, 100);
+    }).reverse(); // все визиты — для дашборда нужны все, история обрезается при рендере
 
     // ── Оборудование ─────────────────────────────────────────────────────
     // 0=Серийный№, 1=НазвТТ, 2=Модель, 3=ДатаУст, 4=ДатаСнят, 5=Статус,
@@ -1900,7 +1900,7 @@ function renderHistory() {
   if (!visitsData.length) { cont.innerHTML='<div class="empty-state">Визитов пока нет</div>'; return; }
   // r[0]=ТТ r[1]=Дата r[2]=ТП r[3]=Примечание
   // r[4]=Ост.кофе r[5]=Ост.молоко r[6]=Ост.виски r[7]=Ост.шоколад r[8]=Ост.мороженое
-  cont.innerHTML = visitsData.slice(0,20).map(r => {
+  cont.innerHTML = visitsData.slice(0,100).map(r => {
     const osts = [
       {label:'Ост. кофе',   val: r[4], cls:'accent-orange'},
       {label:'Ост. молока', val: r[5], cls:''},
