@@ -276,6 +276,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <input type="date" id="visit-date">
       <div class="unit">по умолчанию — сегодня</div>
     </div>
+    <!-- УВЕДОМЛЕНИЕ ПО АППАРАТУ (col J листа Оборудование) -->
+    <div id="machine-alert" style="display:none;margin:10px 0;padding:14px 16px;background:#E8450A;border-radius:14px;border-left:5px solid #FF2D00;box-shadow:0 4px 16px rgba(232,69,10,.4)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.85);text-transform:uppercase;margin-bottom:6px">⚠️ Важное уведомление</div>
+      <div id="machine-alert-text" style="font-size:15px;font-weight:700;color:#fff;line-height:1.55"></div>
+    </div>
 
     <!-- Карточка клиента -->
     <div class="client-card" id="client-card">
@@ -1048,6 +1053,7 @@ async function fetchAllData() {
         status:  String(r[5] || ''),
         koef:    r[6] || 0.01,
         note:    String(r[7] || ''),
+        alert:   String(r[9] || ''), // col J = уведомление для торгового
       });
     });
     // Обогащаем clientsData из Оборудования
@@ -1111,7 +1117,7 @@ async function fetchAllData() {
           if(!equipmentData[cl])equipmentData[cl]=[];
           if(equipmentData[cl].find(e=>e.serial===String(r[0]||'').trim())) return;
           equipmentData[cl].push({id:String(r[0]||''),serial:String(r[0]||''),model:String(r[2]||''),
-            dateOn:String(r[3]||''),dateOff:String(r[4]||''),status:String(r[5]||''),koef:r[6]||0.01,note:String(r[7]||'')});
+            dateOn:String(r[3]||''),dateOff:String(r[4]||''),status:String(r[5]||''),koef:r[6]||0.01,note:String(r[7]||''),alert:String(r[9]||'')});
         });
         // Мёржим напитки
         d.spRaw.slice(3).filter(r=>r[0]&&r[1]&&!r[4]).forEach(r=>{
@@ -1331,6 +1337,17 @@ function onMachineChange() {
   const machines = equipmentData[name] || [];
   const m = machId ? machines.find(x => x.id === machId) : machines.find(x => String(x.status||'').toLowerCase() === 'активна');
   document.getElementById('cc-equip').textContent = m ? `${m.id} — ${m.model}` : '—';
+
+  // Уведомление из col J листа Оборудование
+  const alertEl   = document.getElementById('machine-alert');
+  const alertText = document.getElementById('machine-alert-text');
+  const alertMsg  = m ? (m.alert || '').trim() : '';
+  if (alertMsg && alertEl && alertText) {
+    alertText.textContent = alertMsg;
+    alertEl.style.display = 'block';
+  } else if (alertEl) {
+    alertEl.style.display = 'none';
+  }
   // Сервис: приоритет — сервис аппарата, если нет — сервис клиента
   const svcEl  = document.getElementById('cc-service');
   const svcRow = document.getElementById('cc-service-row');
