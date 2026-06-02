@@ -1017,11 +1017,12 @@ async function fetchAllData() {
     // 6=ОстШок, 7=ОстМор, 8=ЗаяКоф, 9=ЗаяМол, 10=ЗаяВис,
     // 11=ЗаяШок, 12=ЗаяМор, ..., 23=Примечание
     setStatus('Загружаем визиты...'); const visRaw = await scriptGet('Визиты', 6);
+    const _sortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:''; };
     visitsData = visRaw.slice(3).filter(r => r[0]).map(r => {
       const rr = [...r];
       rr[1] = fmtDate(rr[1]);  // Дата col1
       return rr;
-    }).reverse(); // все визиты — для дашборда нужны все, история обрезается при рендере
+    }).sort((a,b) => _sortKey(b[1]).localeCompare(_sortKey(a[1]))); // сортировка по дате новые→старые
 
     // ── Оборудование ─────────────────────────────────────────────────────
     // 0=Серийный№, 1=НазвТТ, 2=Модель, 3=ДатаУст, 4=ДатаСнят, 5=Статус,
@@ -1096,7 +1097,10 @@ async function fetchAllData() {
         clientsData = clientsData.concat(addClients);
         // Мёржим визиты
         const addVisits = d.visRaw.slice(3).filter(r=>r[0]).map(r=>{const rr=[...r];rr[1]=fmtDate(rr[1]);return rr;});
-        visitsData = visitsData.concat(addVisits).sort((a,b)=>(b[1]||'').localeCompare(a[1]||'')).slice(0,200);
+        // Сортируем по дате правильно: DD.MM.YYYY → сравниваем как YYYY-MM-DD
+        const toSortKey = d => { const p=String(d||'').split('.'); return p.length===3?p[2]+p[1]+p[0]:''; };
+        visitsData = visitsData.concat(addVisits)
+          .sort((a,b) => _sortKey(b[1]).localeCompare(_sortKey(a[1]))); // без slice — все визиты
         // Мёржим оборудование
         d.eqRaw.slice(3).filter(r=>r[0]&&r[1]
           && String(r[4]||'').trim()===''
