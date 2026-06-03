@@ -137,6 +137,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .toast{position:fixed;bottom:calc(var(--safe-bot) + 80px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#000;font-family:var(--font-head);font-size:12px;font-weight:700;padding:10px 20px;border-radius:30px;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.error{background:var(--danger);color:#fff}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.prev-hint{font-size:11px;color:var(--accent);margin-top:3px;min-height:14px;font-weight:500;}
 .summary-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;overflow-y:auto;padding:16px;}
 .summary-modal.open{display:flex;align-items:flex-start;justify-content:center;}
 .summary-box{background:#fff;color:#111;border-radius:16px;padding:20px;max-width:480px;width:100%;font-family:var(--font-body);}
@@ -308,20 +309,20 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
     <div class="section-title">Остатки у клиента</div>
     <div class="input-grid">
-      <div class="input-group"><label>Кофе</label><input inputmode="decimal" type="number" id="ost-kofe" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-kofe',window._autoOst&&window._autoOst.kofe,'Кофе')"><div class="unit">кг</div></div>
-      <div class="input-group"><label>Молоко</label><input inputmode="decimal" type="number" id="ost-mol" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-mol',window._autoOst&&window._autoOst.mol,'Молоко')"><div class="unit">кг</div></div>
-      <div class="input-group" id="ost-vis-wrap"><label>Виски</label><input inputmode="decimal" type="number" id="ost-vis" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-vis',window._autoOst&&window._autoOst.vis,'Виски')"><div class="unit">кг</div></div>
-      <div class="input-group" id="ost-shok-wrap"><label>Шоколад</label><input inputmode="decimal" type="number" id="ost-shok" step="0.001" min="0" placeholder="0.000"><div class="unit">кг</div></div>
-      <div class="input-group" id="ost-moroz-wrap"><label>Мороженое</label><input inputmode="decimal" type="number" id="ost-moroz" step="0.001" min="0" placeholder="0.000"><div class="unit">кг</div></div>
+      <div class="input-group"><label>Кофе</label><input inputmode="decimal" type="number" id="ost-kofe" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-kofe',window._autoOst&&window._autoOst.kofe,'Кофе')"><div class="unit">кг</div><div class="prev-hint" id="prev-ost-kofe"></div></div>
+      <div class="input-group"><label>Молоко</label><input inputmode="decimal" type="number" id="ost-mol" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-mol',window._autoOst&&window._autoOst.mol,'Молоко')"><div class="unit">кг</div><div class="prev-hint" id="prev-ost-mol"></div></div>
+      <div class="input-group" id="ost-vis-wrap"><label>Виски</label><input inputmode="decimal" type="number" id="ost-vis" step="0.001" min="0" placeholder="0.000" oninput="checkOstatok('ost-vis',window._autoOst&&window._autoOst.vis,'Виски')"><div class="unit">кг</div><div class="prev-hint" id="prev-ost-vis"></div></div>
+      <div class="input-group" id="ost-shok-wrap"><label>Шоколад</label><input inputmode="decimal" type="number" id="ost-shok" step="0.001" min="0" placeholder="0.000"><div class="unit">кг</div><div class="prev-hint" id="prev-ost-shok"></div></div>
+      <div class="input-group" id="ost-moroz-wrap"><label>Мороженое</label><input inputmode="decimal" type="number" id="ost-moroz" step="0.001" min="0" placeholder="0.000"><div class="unit">кг</div><div class="prev-hint" id="prev-ost-moroz"></div></div>
     </div>
 
     <div class="section-title">Заявка</div>
     <div class="input-grid">
-      <div class="input-group"><label>Кофе</label><input inputmode="decimal" type="number" id="zay-kofe" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
-      <div class="input-group"><label>Молоко</label><input inputmode="decimal" type="number" id="zay-mol" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
-      <div class="input-group" id="zay-vis-wrap"><label>Виски</label><input inputmode="decimal" type="number" id="zay-vis" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
-      <div class="input-group" id="zay-shok-wrap"><label>Шоколад</label><input inputmode="decimal" type="number" id="zay-shok" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
-      <div class="input-group" id="zay-moroz-wrap"><label>Мороженое</label><input inputmode="decimal" type="number" id="zay-moroz" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div></div>
+      <div class="input-group"><label>Кофе</label><input inputmode="decimal" type="number" id="zay-kofe" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div><div class="prev-hint" id="prev-zay-kofe"></div></div>
+      <div class="input-group"><label>Молоко</label><input inputmode="decimal" type="number" id="zay-mol" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div><div class="prev-hint" id="prev-zay-mol"></div></div>
+      <div class="input-group" id="zay-vis-wrap"><label>Виски</label><input inputmode="decimal" type="number" id="zay-vis" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div><div class="prev-hint" id="prev-zay-vis"></div></div>
+      <div class="input-group" id="zay-shok-wrap"><label>Шоколад</label><input inputmode="decimal" type="number" id="zay-shok" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div><div class="prev-hint" id="prev-zay-shok"></div></div>
+      <div class="input-group" id="zay-moroz-wrap"><label>Мороженое</label><input inputmode="decimal" type="number" id="zay-moroz" step="0.1" min="0" placeholder="0.0"><div class="unit">кг</div><div class="prev-hint" id="prev-zay-moroz"></div></div>
     </div>
 
     <div class="section-title">Счётчики аппарата</div>
@@ -1326,6 +1327,34 @@ function onClientChange() {
   if (machines.length === 1) machSel.value = machines[0].id;
 
   onMachineChange();
+  updatePrevHints();
+}
+
+function updatePrevHints() {
+  // Заполняем подсказки из последнего визита этого клиента
+  const name = document.getElementById('visit-client').value;
+  if (!name) return;
+  const prev = visitsData.filter(r => String(r[0]).trim() === name)[0] || null;
+  // r[4]=ост.кофе r[5]=ост.мол r[6]=ост.вис r[7]=ост.шок r[8]=ост.мор
+  // r[9]=зай.кофе r[10]=зай.мол r[11]=зай.вис r[12]=зай.шок r[13]=зай.мор
+  const fields = [
+    ['prev-ost-kofe',  prev?.[4]],
+    ['prev-ost-mol',   prev?.[5]],
+    ['prev-ost-vis',   prev?.[6]],
+    ['prev-ost-shok',  prev?.[7]],
+    ['prev-ost-moroz', prev?.[8]],
+    ['prev-zay-kofe',  prev?.[9]],
+    ['prev-zay-mol',   prev?.[10]],
+    ['prev-zay-vis',   prev?.[11]],
+    ['prev-zay-shok',  prev?.[12]],
+    ['prev-zay-moroz', prev?.[13]],
+  ];
+  fields.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const v = (val !== undefined && val !== null && val !== '') ? String(val) : '';
+    el.textContent = v ? `прошлый: ${v} кг` : '';
+  });
 }
 
 function onMachineChange() {
