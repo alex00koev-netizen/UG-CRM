@@ -856,6 +856,10 @@ async function scriptPost(payload, retries=2, timeoutMs=25000, baseUrl) {
       clearTimeout(timeout);
       if (!r.ok) throw new Error(`Ошибка сети: ${r.status}`);
       const d = await r.json();
+      if (d.timings) {
+        console.log('⏱️ Apps Script timings (' + payload.action + '):', d.timings.join(' | '));
+        window._lastTimings = d.timings; // сохраняем — можно посмотреть в консоли: window._lastTimings
+      }
       if (d.status === 'error') throw new Error(d.message);
       return d;
     } catch(e) {
