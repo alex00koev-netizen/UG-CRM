@@ -1656,24 +1656,27 @@ async function submitVisit() {
     const drinks    = window._filteredDrinks || [];
     const targetUrl = getClientScriptUrl(client);
 
-    // 1. Визит — только если есть остатки или заявка
-    const _hasOst = [4,5,6,7,8].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
-    const _hasZay = [9,10,11,12,13].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
-    if (_hasOst || _hasZay) {
-      await scriptPost({ action:'addVisit', row }, 2, 25000, targetUrl);
-    }
-
-    // 2. Счётчики расхода по напиткам
+    // 1. Сначала собираем счётчики напитков — нужны для проверки условия создания визита
     const cRows = [];
     drinks.forEach((d,i) => {
       const val = parseInt(document.getElementById('drink-'+i)?.value||'0') || 0;
       if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
+
+    // 2. Визит — создаём если есть остатки, ИЛИ заявка, ИЛИ заполнен хотя бы один счётчик напитка
+    const _hasOst = [4,5,6,7,8].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
+    const _hasZay = [9,10,11,12,13].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
+    const _hasCounters = cRows.length > 0;
+    if (_hasOst || _hasZay || _hasCounters) {
+      await scriptPost({ action:'addVisit', row }, 2, 25000, targetUrl);
+    }
+
+    // 3. Счётчики расхода по напиткам
     if (cRows.length) {
       await scriptPost({ action:'addCounters', rows:cRows }, 2, 45000, targetUrl);
     }
 
-    // 3. Общие счётчики
+    // 4. Общие счётчики
     const gen = v('general-counter');
     const eng = v('engineer-counter');
     if (gen || eng) {
