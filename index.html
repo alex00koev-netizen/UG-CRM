@@ -856,10 +856,6 @@ async function scriptPost(payload, retries=2, timeoutMs=25000, baseUrl) {
       clearTimeout(timeout);
       if (!r.ok) throw new Error(`Ошибка сети: ${r.status}`);
       const d = await r.json();
-      if (d.timings) {
-        console.log('⏱️ Apps Script timings (' + payload.action + '):', d.timings.join(' | '));
-        window._lastTimings = d.timings; // сохраняем — можно посмотреть в консоли: window._lastTimings
-      }
       if (d.status === 'error') throw new Error(d.message);
       return d;
     } catch(e) {
@@ -1649,38 +1645,54 @@ async function submitVisit() {
       v('zay-shok'),     // M(12) Заявка шоколад
       v('zay-moroz'),    // N(13) Заявка мороженое
     ];
-    // Отправляем последовательно (не параллельно) — параллельные запросы
-    // от одного визита конкурировали за один и тот же LockService на сервере,
-    // что приводило к долгому ожиданию очереди и каскаду повторных попыток.
+    // Отправляем параллельно через allSettled — если один из трёх запросов
+    // упадёт (сетевой сбой/холодный старт), тихо повторяем именно его,
+    // не трогая те, что уже прошли успешно. Dedup на сервере не даст
+    // повторной попытке создать дубль там, где данные уже записались.
     const serial    = document.getElementById('visit-machine').value || '';
     const drinks    = window._filteredDrinks || [];
     const targetUrl = getClientScriptUrl(client);
 
-    // 1. Сначала собираем счётчики напитков — нужны для проверки условия создания визита
+    // Счётчики напитков — собираем заранее, нужны для условия создания визита
     const cRows = [];
     drinks.forEach((d,i) => {
       const val = parseInt(document.getElementById('drink-'+i)?.value||'0') || 0;
       if (val > 0) cRows.push([client, serial, ds, d.name.trim(), parseInt(d.size)||0, val]);
     });
 
-    // 2. Визит — создаём если есть остатки, ИЛИ заявка, ИЛИ заполнен хотя бы один счётчик напитка
+    // Визит — создаём если есть остатки, ИЛИ заявка, ИЛИ заполнен хотя бы один счётчик напитка
     const _hasOst = [4,5,6,7,8].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
     const _hasZay = [9,10,11,12,13].some(i => row[i] !== '' && row[i] !== null && parseFloat(row[i]) > 0);
     const _hasCounters = cRows.length > 0;
-    if (_hasOst || _hasZay || _hasCounters) {
-      await scriptPost({ action:'addVisit', row }, 2, 25000, targetUrl);
-    }
-
-    // 3. Счётчики расхода по напиткам
-    if (cRows.length) {
-      await scriptPost({ action:'addCounters', rows:cRows }, 2, 45000, targetUrl);
-    }
-
-    // 4. Общие счётчики
     const gen = v('general-counter');
     const eng = v('engineer-counter');
+
+    // Список задач — каждая со своим названием для повтора
+    const tasks = [];
+    if (_hasOst || _hasZay || _hasCounters) {
+      tasks.push({ name:'addVisit', fn: () => scriptPost({ action:'addVisit', row }, 2, 25000, targetUrl) });
+    }
+    if (cRows.length) {
+      tasks.push({ name:'addCounters', fn: () => scriptPost({ action:'addCounters', rows:cRows }, 2, 45000, targetUrl) });
+    }
     if (gen || eng) {
-      await scriptPost({ action:'addGenCounters', row:[client, serial, ds, gen||'', eng||''] }, 2, 25000, targetUrl);
+      tasks.push({ name:'addGenCounters', fn: () => scriptPost({ action:'addGenCounters', row:[client, serial, ds, gen||'', eng||''] }, 2, 25000, targetUrl) });
+    }
+
+    // Первая попытка — все параллельно
+    let settled = await Promise.allSettled(tasks.map(t => t.fn()));
+
+    // Тихий повтор только тех задач, что упали (без уведомления торгового)
+    const failedIdx = settled.map((r,i) => r.status === 'rejected' ? i : -1).filter(i => i >= 0);
+    if (failedIdx.length) {
+      const retryResults = await Promise.allSettled(failedIdx.map(i => tasks[i].fn()));
+      retryResults.forEach((r, j) => { settled[failedIdx[j]] = r; });
+    }
+
+    // Если после повтора всё равно есть провалы — показываем ошибку пользователю
+    const stillFailed = settled.filter(r => r.status === 'rejected');
+    if (stillFailed.length) {
+      throw stillFailed[0].reason;
     }
 
     showToast('✓ Визит сохранён!');
