@@ -3042,15 +3042,22 @@ async function submitNewClient(){
         ncZayKofe, ncZayMol, ncZayVis, ncZayShok, ncZayMoroz];
       ncPromises.push(scriptPost({action:'addVisit', row:firstVisitRow}));
     }
-    await Promise.all(ncPromises);
-    showSummary(); // сводка для скриншота — вызываем ДО сброса формы
+
+    // Показываем сводку для скриншота СРАЗУ — все данные уже введены в форму,
+    // ждать ответа от сервера не нужно. Сохранение идёт в фоне ниже.
+    showSummary();
     showToast(`✓ Клиент "${name}" создан!`);
     ['nc-date','nc-name','nc-address','nc-contact','nc-type','nc-day','nc-bonus','nc-otsr','nc-extra','nc-service','nc-machine-id','nc-model','nc-serial','nc-koef','nc-gen-counter','nc-eng-counter','nc-note','nc-p-rosso','nc-p-blu','nc-p-oro','nc-p-arabica','nc-p-classic','nc-p-mol','nc-p-viski','nc-p-shok','nc-p-krem','nc-zay-kofe','nc-zay-mol','nc-zay-vis','nc-zay-shok','nc-zay-moroz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     // Сбрасываем select модели и скрываем поле ручного ввода
     const _ms=document.getElementById('nc-model-select');if(_ms)_ms.value='';
     const _mw=document.getElementById('nc-model-manual-wrap');if(_mw)_mw.style.display='none';;
     document.getElementById('nc-drinks-list').innerHTML=''; drinkRowCount=0;
-    await fetchAllData();
+
+    // Сохранение в фоне — ошибки (если будут) показываются отдельным тостом,
+    // не задерживая момент скриншота сводки.
+    Promise.all(ncPromises)
+      .then(() => fetchAllData())
+      .catch(e => showToast('⚠️ Ошибка сохранения клиента: ' + e.message, true));
   }catch(e){showToast('Ошибка: '+e.message,true);}
   finally{btn.disabled=false;document.getElementById('nc-spinner').style.display='none';document.getElementById('nc-label').textContent='Создать клиента';}
 }
